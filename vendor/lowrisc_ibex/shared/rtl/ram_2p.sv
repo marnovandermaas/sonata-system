@@ -10,7 +10,7 @@
 
 module ram_2p #(
     parameter int Depth       = 128,
-    parameter int Width       = 32,
+    parameter int Width       = 33,
     parameter int AddrOffsetA = 2,
     parameter int AddrOffsetB = 2,
     parameter     MemInitFile = ""
