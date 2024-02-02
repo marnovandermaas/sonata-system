@@ -352,12 +352,12 @@ module tlul_adapter_sram
   logic [WidthMult-1:0][top_pkg::TL_DW-1:0] wmask_int;
   logic [WidthMult-1:0][top_pkg::TL_DW-1:0] wdata_int;
 
+  // Capability portion
+  logic wcap_int;
+
   // Integrity portion
   logic [WidthMult-1:0][DataIntgWidth-1:0] wmask_intg;
   logic [WidthMult-1:0][DataIntgWidth-1:0] wdata_intg;
-
-  // Capability portion
-  logic wcap_int;
 
   always_comb begin
     wmask_int = '0;
@@ -369,7 +369,7 @@ module tlul_adapter_sram
         wmask_int[woffset][8*i +: 8] = {8{tl_i_int.a_mask[i]}};
         wdata_int[woffset][8*i +: 8] = (tl_i_int.a_mask[i] && we_o) ? tl_i_int.a_data[8*i+:8] : '0;
       end
-      wcap_int = we_o ? tl_i_int.a_user.capability : '0;
+      wcap_int = we_o ? tl_i_int.a_user.capability : 1'b0;
     end
   end
 

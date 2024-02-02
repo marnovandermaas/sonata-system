@@ -54,7 +54,7 @@ package tlul_pkg;
     instr_type: prim_mubi_pkg::MuBi4False,
     cmd_intg:  {H2DCmdIntgWidth{1'b1}},
     data_intg: {DataIntgWidth{1'b1}},
-    capability: '0
+    capability: 1'b0
   };
 
   typedef struct packed {
@@ -103,7 +103,7 @@ package tlul_pkg;
   parameter tl_d_user_t TL_D_USER_DEFAULT = '{
     rsp_intg: {D2HRspIntgWidth{1'b1}},
     data_intg: {DataIntgWidth{1'b1}},
-    capability: '0
+    capability: 1'b0
   };
 
   typedef struct packed {

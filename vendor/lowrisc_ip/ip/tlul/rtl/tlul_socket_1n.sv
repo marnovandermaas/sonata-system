@@ -145,7 +145,7 @@ module tlul_socket_1n #(
     instr_type: tl_t_o.a_user.instr_type,
     cmd_intg: tlul_pkg::get_bad_cmd_intg(tl_t_o),
     data_intg: tlul_pkg::get_bad_data_intg(tlul_pkg::BlankedAData),
-    capability: '0
+    capability: 1'b0
   };
 
   // if a host is not selected, or if requests are held off, blank the bus
