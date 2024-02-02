@@ -288,7 +288,7 @@ module sonata_system #(
     .wmask_o(),
     .intg_error_o(),
     .rdata_i(mem_instr_rdata),
-    .rdata_cap_i(),
+    .rdata_cap_i(1'b0),
     .rvalid_i(mem_instr_rvalid),
     .rerror_i(2'b00)
   );
@@ -587,7 +587,7 @@ module sonata_system #(
     .b_we_i    (1'b0),
     .b_be_i    (BusByteEnable'(0)),
     .b_addr_i  (mem_instr_addr),
-    .b_wdata_i ((BusDataWidth+1)'(0)),
+    .b_wdata_i ({1'b0, BusDataWidth'(0)}),
     .b_rvalid_o(mem_instr_rvalid),
     .b_rdata_o ({unused_mem_instr_rcap, mem_instr_rdata})
   );
