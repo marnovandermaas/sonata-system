@@ -325,7 +325,6 @@ module tlul_adapter_sram
   //    In this case, it is assumed the request is granted (may cause ordering issue later?)
   assign req_o      = tl_i_int.a_valid & reqfifo_wready & ~error_internal;
   assign req_type_o = tl_i_int.a_user.instr_type;
-  assign wdata_cap_o = tl_i_int.a_user.capability;
   assign we_o       = tl_i_int.a_valid & (tl_i_int.a_opcode inside {PutFullData, PutPartialData});
   assign addr_o     = (tl_i_int.a_valid) ? tl_i_int.a_address[DataBitWidth+:SramAw] : '0;
 
