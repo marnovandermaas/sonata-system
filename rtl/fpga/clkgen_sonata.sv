@@ -27,12 +27,12 @@ module clkgen_sonata (
     .COMPENSATION         ("ZHOLD"),
     .STARTUP_WAIT         ("FALSE"),
     .DIVCLK_DIVIDE        (1),
-    .CLKFBOUT_MULT        (34),
-    .CLKFBOUT_PHASE       (0.000),
-    .CLKOUT0_DIVIDE       (17),
-    .CLKOUT0_PHASE        (0.000),
-    .CLKOUT0_DUTY_CYCLE   (0.500),
-    .CLKIN1_PERIOD        (40.000)
+    .CLKFBOUT_MULT        ( 40.000),
+    .CLKFBOUT_PHASE       (  0.000),
+    .CLKOUT0_DIVIDE       (100.000),
+    .CLKOUT0_PHASE        (  0.000),
+    .CLKOUT0_DUTY_CYCLE   (  0.500),
+    .CLKIN1_PERIOD        ( 40.000)
   ) pll (
     .CLKFBOUT            (clk_fb_unbuf),
     .CLKOUT0             (clk_50_unbuf),

@@ -10,7 +10,7 @@
 
 module ram_2p #(
     parameter int Depth       = 128,
-    parameter int Width       = 33,
+    parameter int Width       = 32,
     parameter int AddrOffsetA = 2,
     parameter int AddrOffsetB = 2,
     parameter     MemInitFile = ""
@@ -63,8 +63,6 @@ module ram_2p #(
   logic [Width-1:0] a_wmask;
   logic [Width-1:0] b_wmask;
   always_comb begin
-    a_wmask[Width-1] = &a_be_i;
-    b_wmask[Width-1] = &b_be_i;
     for (int i = 0 ; i < 4 ; i++) begin
       // mask for read data
       a_wmask[8*i+:8] = {8{a_be_i[i]}};
@@ -98,9 +96,9 @@ module ram_2p #(
     .a_rdata_o (a_rdata_o),
     .b_req_i   (b_req_i),
     .b_write_i (b_we_i),
-    .b_wmask_i (b_wmask),
     .b_addr_i  (b_addr_idx),
     .b_wdata_i (b_wdata_i),
+    .b_wmask_i (b_wmask),
     .b_rdata_o (b_rdata_o)
   );
 

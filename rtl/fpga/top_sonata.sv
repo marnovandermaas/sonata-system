@@ -75,12 +75,31 @@ module top_sonata (
     .uart_rx_i(ser0_rx),
     .uart_tx_o(ser0_tx),
 
-    .pwm_o({cheriErr, led_legacy, led_cheri, led_halted}),
+    .pwm_o({cheriErr[7:0], led_legacy, led_cheri, led_halted}),
 
     .spi_rx_i (1'b0),
     .spi_tx_o (lcd_copi),
     .spi_sck_o(lcd_clk)
   );
+
+  logic [31:0] counter;
+  logic led_output;
+
+  always_ff @(posedge clk_sys) begin
+    if (!rst_sys_n) begin
+      led_output <= 1;
+      counter <= 5000000;
+    end else begin
+      if (counter == 0) begin
+        counter <= 5000000;
+        led_output = ~led_output;
+      end else begin
+        counter <= counter - 1;
+      end
+    end
+  end
+
+  assign cheriErr[8] = led_output;
 
   // Produce 50 MHz system clock from 25 MHz Sonata board clock.
   clkgen_sonata clkgen(

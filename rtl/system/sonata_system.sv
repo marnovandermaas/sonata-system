@@ -492,6 +492,12 @@ module sonata_system #(
 
   assign rst_core_n = rst_sys_ni;
 
+  logic core_double_fault_seen;
+  logic core_alert_minor;
+  logic core_alert_major_internal;
+  logic core_alert_major_bus;
+  logic core_sleep;
+
   ibexc_top #(
     .DmHaltAddr      ( DebugStart + dm::HaltAddress[31:0]      ),
     .DmExceptionAddr ( DebugStart + dm::ExceptionAddress[31:0] ),
@@ -503,9 +509,9 @@ module sonata_system #(
     .clk_i (clk_sys_i),
     .rst_ni(rst_core_n),
 
-    .test_en_i  ('b0),
+    .test_en_i  (1'b0),
     .scan_rst_ni(1'b1),
-    .ram_cfg_i  ('b0),
+    .ram_cfg_i  (10'b0),
 
     .cheri_pmode_i (1'b1),
     .cheri_tsafe_en_i (1'b0), // TODO enable temporal safety.
@@ -557,17 +563,21 @@ module sonata_system #(
 
     .debug_req_i        (),
     .crash_dump_o       (),
-    .double_fault_seen_o(),
+    .double_fault_seen_o(core_double_fault_seen),
 
     .fetch_enable_i        ('1),
-    .alert_minor_o         (),
-    .alert_major_internal_o(),
-    .alert_major_bus_o     (),
-    .core_sleep_o          ()
+    .alert_minor_o         (core_alert_minor),
+    .alert_major_internal_o(core_alert_major_internal),
+    .alert_major_bus_o     (core_alert_major_bus),
+    .core_sleep_o          (core_sleep)
   );
 
+  assign pwm_o[0] = core_double_fault_seen | core_alert_minor | core_alert_major_internal | core_alert_major_bus | core_sleep;
+
+  localparam int RamDepth = MemSize / 4;
+
   ram_2p #(
-      .Depth       ( MemSize / 4  ),
+      .Depth       ( RamDepth     ),
       .AddrOffsetA ( 0            ),
       .AddrOffsetB ( 0            ),
       .MemInitFile ( SRAMInitFile )
@@ -579,17 +589,38 @@ module sonata_system #(
     .a_we_i    (device_we[Ram]),
     .a_be_i    (device_be[Ram]),
     .a_addr_i  (device_addr[Ram]),
-    .a_wdata_i ({device_wcap[Ram], device_wdata[Ram]}),
+    .a_wdata_i (device_wdata[Ram]),
     .a_rvalid_o(device_rvalid[Ram]),
-    .a_rdata_o ({device_rcap[Ram], device_rdata[Ram]}),
+    .a_rdata_o (device_rdata[Ram]),
 
     .b_req_i   (mem_instr_req),
     .b_we_i    (1'b0),
     .b_be_i    (BusByteEnable'(0)),
     .b_addr_i  (mem_instr_addr),
-    .b_wdata_i ({1'b0, BusDataWidth'(0)}),
+    .b_wdata_i (BusDataWidth'(0)),
     .b_rvalid_o(mem_instr_rvalid),
-    .b_rdata_o ({unused_mem_instr_rcap, mem_instr_rdata})
+    .b_rdata_o (mem_instr_rdata)
+  );
+
+  prim_ram_2p #(
+    .Width ( 1        ),
+    .Depth ( RamDepth )
+  ) u_cap_ram (
+    .clk_a_i   (clk_sys_i),
+    .clk_b_i   (clk_sys_i),
+    .cfg_i     ('0),
+    .a_req_i   (device_req[Ram]),
+    .a_write_i (&device_we[Ram]),
+    .a_addr_i  (device_addr[Ram][$clog2(RamDepth)-1+2:2]),
+    .a_wdata_i (device_wcap[Ram]),
+    .a_wmask_i (&device_we[Ram]),
+    .a_rdata_o (device_rcap[Ram]),
+    .b_req_i   (mem_instr_req),
+    .b_write_i (1'b0),
+    .b_wmask_i (1'b0),
+    .b_addr_i  (mem_instr_addr[$clog2(RamDepth)-1+2:2]),
+    .b_wdata_i (1'b0),
+    .b_rdata_o (unused_mem_instr_rcap)
   );
 
   gpio #(
@@ -612,7 +643,7 @@ module sonata_system #(
   );
 
   pwm_wrapper #(
-    .PwmWidth   ( PwmWidth   ),
+    .PwmWidth   ( PwmWidth-1 ),
     .PwmCtrSize ( PwmCtrSize )
   ) u_pwm (
     .clk_i (clk_sys_i),
@@ -626,7 +657,7 @@ module sonata_system #(
     .device_rvalid_o(device_rvalid[Pwm]),
     .device_rdata_o (device_rdata[Pwm]),
 
-    .pwm_o
+    .pwm_o(pwm_o[PwmWidth-1:1])
   );
 
   uart #(
