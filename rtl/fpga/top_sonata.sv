@@ -40,7 +40,7 @@ module top_sonata (
     reset_counter = 0;
   end
 
-  always_ff @(posedge main_clk_buf) begin
+  always_ff @(posedge clk_sys) begin
     if (reset_counter != 8'hff) begin
       reset_counter <= reset_counter + 8'd1;
     end
@@ -85,7 +85,6 @@ module top_sonata (
   // Produce 50 MHz system clock from 25 MHz Sonata board clock.
   clkgen_sonata clkgen(
     .IO_CLK    (mainClk),
-    .IO_CLK_BUF(main_clk_buf),
     .IO_RST_N  (top_rst_n),
     .clk_sys,
     .rst_sys_n

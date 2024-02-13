@@ -72,8 +72,6 @@ module clkgen_sonata (
     .O (clk_50_buf)
   );
 
-  assign IO_CLK_BUF = io_clk_buf;
-
   // outputs
   // clock
   assign clk_sys = clk_50_buf;
