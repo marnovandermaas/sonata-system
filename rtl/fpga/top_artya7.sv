@@ -27,7 +27,7 @@ module top_artya7 #(
   sonata_system #(
     .GpiWidth     ( 8            ),
     .GpoWidth     ( 8            ),
-    .PwmWidth     ( 12           ),
+    .PwmWidth     ( 11           ),
     .SRAMInitFile ( SRAMInitFile )
   ) u_sonata_system (
     //input
@@ -38,13 +38,33 @@ module top_artya7 #(
 
     //output
     .gp_o     ({LED, DISP_CTRL}),
-    .pwm_o    (RGB_LED),
+    .pwm_o    (RGB_LED[11:1]),
     .uart_tx_o(UART_TX),
 
     .spi_rx_i (SPI_RX),
     .spi_tx_o (SPI_TX),
     .spi_sck_o(SPI_SCK)
   );
+
+
+  logic [31:0] counter;
+  logic led_output;
+
+  always_ff @(posedge clk_sys) begin
+    if (!rst_sys_n) begin
+      led_output <= SW[0];
+      counter <= 5000000;
+    end else begin
+      if (counter == 0) begin
+        counter <= 5000000;
+        led_output = ~led_output & SW[0];
+      end else begin
+        counter <= counter - 1;
+      end
+    end
+  end
+
+  assign RGB_LED[0] = led_output;
 
   // Generating the system clock and reset for the FPGA.
   clkgen_xil7series clkgen(
