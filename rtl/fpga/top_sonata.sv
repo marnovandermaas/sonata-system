@@ -63,7 +63,7 @@ module top_sonata (
   sonata_system #(
     .GpiWidth    ( 13           ),
     .GpoWidth    ( 12           ),
-    .PwmWidth    ( 12           ),
+    .PwmWidth    ( 11           ),
     .SRAMInitFile( SRAMInitFile )
   ) u_sonata_system (
     .clk_sys_i (clk_sys),
