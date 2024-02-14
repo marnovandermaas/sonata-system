@@ -4,3 +4,10 @@ build/
 target/
 *.fst
 sonata_system_pcount.csv
+sonata-manual/sonata-manual.cache/
+sonata-manual/sonata-manual.gen/
+sonata-manual/sonata-manual.hw/
+sonata-manual/sonata-manual.ip_user_files/
+sonata-manual/sonata-manual.runs/
+sonata-manual/sonata-manual.sim/
+sonata-manual/sonata-manual.srcs/
