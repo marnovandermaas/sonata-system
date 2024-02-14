@@ -499,8 +499,8 @@ module sonata_system #(
   logic core_sleep;
 
   ibexc_top #(
-    .DmHaltAddr      ( DebugStart + dm::HaltAddress[31:0]      ),
-    .DmExceptionAddr ( DebugStart + dm::ExceptionAddress[31:0] ),
+    .DmHaltAddr      ( DebugStart + 32'h800                    ),
+    .DmExceptionAddr ( DebugStart + 32'h808                    ),
     .DbgTriggerEn    ( DbgTriggerEn                            ),
     .DbgHwBreakNum   ( DbgHwBreakNum                           ),
     .MHPMCounterNum  ( 10                                      ),
