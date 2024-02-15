@@ -12,8 +12,8 @@
 // - Debug module.
 // - SPI for driving LCD screen.
 module sonata_system #(
-  parameter int unsigned GpiWidth = 8,
-  parameter int unsigned GpoWidth = 16,
+  parameter int unsigned GpiWidth = 13,
+  parameter int unsigned GpoWidth = 24,
   parameter int unsigned PwmWidth = 12,
   parameter SRAMInitFile          = ""
 ) (
@@ -492,12 +492,6 @@ module sonata_system #(
 
   assign rst_core_n = rst_sys_ni;
 
-  logic core_double_fault_seen;
-  logic core_alert_minor;
-  logic core_alert_major_internal;
-  logic core_alert_major_bus;
-  logic core_sleep;
-
   ibexc_top #(
     .DmHaltAddr      ( DebugStart + dm::HaltAddress[31:0]      ),
     .DmExceptionAddr ( DebugStart + dm::ExceptionAddress[31:0] ),
@@ -563,16 +557,14 @@ module sonata_system #(
 
     .debug_req_i        (),
     .crash_dump_o       (),
-    .double_fault_seen_o(core_double_fault_seen),
+    .double_fault_seen_o(),
 
     .fetch_enable_i        ('1),
-    .alert_minor_o         (core_alert_minor),
-    .alert_major_internal_o(core_alert_major_internal),
-    .alert_major_bus_o     (core_alert_major_bus),
-    .core_sleep_o          (core_sleep)
+    .alert_minor_o         (),
+    .alert_major_internal_o(),
+    .alert_major_bus_o     (),
+    .core_sleep_o          ()
   );
-
-  assign pwm_o[0] = core_double_fault_seen | core_alert_minor | core_alert_major_internal | core_alert_major_bus | core_sleep;
 
   localparam int RamDepth = MemSize / 4;
 
@@ -643,7 +635,7 @@ module sonata_system #(
   );
 
   pwm_wrapper #(
-    .PwmWidth   ( PwmWidth-1 ),
+    .PwmWidth   ( PwmWidth   ),
     .PwmCtrSize ( PwmCtrSize )
   ) u_pwm (
     .clk_i (clk_sys_i),
@@ -657,7 +649,7 @@ module sonata_system #(
     .device_rvalid_o(device_rvalid[Pwm]),
     .device_rdata_o (device_rdata[Pwm]),
 
-    .pwm_o(pwm_o[PwmWidth-1:1])
+    .pwm_o(pwm_o)
   );
 
   uart #(
