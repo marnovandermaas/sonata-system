@@ -30,27 +30,39 @@ module top_sonata (
 
   logic top_rst_n;
   logic main_clk_buf;
-  logic clk_sys, rst_sys_n;
+  logic clk_sys;
+  logic rst_sys_n;
+  logic locked_pll;
+  logic nrst_dbc;
   logic [7:0] reset_counter;
 
   logic [4:0] nav_sw_n;
   logic [7:0] user_sw_n;
+
+  debounce #(
+    .ClkCount( 500 )
+  ) dbnc (
+    .clk_i (clk_sys),
+    .rst_ni(top_rst_n),
+    .btn_i (nrst),
+    .btn_o (nrst_dbc)
+  );
 
   initial begin
     reset_counter = 0;
   end
 
   always_ff @(posedge main_clk_buf) begin
-    if (reset_counter != 8'hff) begin
+    if (reset_counter != 8'hff && locked_pll == 1'b1) begin
       reset_counter <= reset_counter + 8'd1;
     end
   end
 
   assign top_rst_n = reset_counter < 8'd5   ? 1'b1 :
                      reset_counter < 8'd200 ? 1'b0 :
-                                              nrst ;
+                                              1'b1 ;
 
-  assign led_bootok = 1'b1;
+  assign rst_sys_n = top_rst_n & nrst_dbc;
 
   // Switch inputs have pull-ups and switches pull to ground when on. Invert here so CPU sees 1 for
   // on and 0 for off.
@@ -105,9 +117,8 @@ module top_sonata (
   clkgen_sonata clkgen(
     .IO_CLK    (mainClk),
     .IO_CLK_BUF(main_clk_buf),
-    .IO_RST_N  (top_rst_n),
     .clk_sys,
-    .rst_sys_n
+    .locked_pll
   );
 
 endmodule

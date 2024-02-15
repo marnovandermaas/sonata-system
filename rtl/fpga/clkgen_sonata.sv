@@ -5,11 +5,9 @@
 module clkgen_sonata (
     input IO_CLK,
     output IO_CLK_BUF,
-    input IO_RST_N,
     output clk_sys,
-    output rst_sys_n
+    output locked_pll
 );
-  logic locked_pll;
   logic io_clk_buf;
   logic clk_50_buf;
   logic clk_50_unbuf;
@@ -77,7 +75,4 @@ module clkgen_sonata (
   // outputs
   // clock
   assign clk_sys = clk_50_buf;
-
-  // reset
-  assign rst_sys_n = locked_pll & IO_RST_N;
 endmodule
