@@ -492,12 +492,6 @@ module sonata_system #(
 
   assign rst_core_n = rst_sys_ni;
 
-  logic core_double_fault_seen;
-  logic core_alert_minor;
-  logic core_alert_major_internal;
-  logic core_alert_major_bus;
-  logic core_sleep;
-
   ibexc_top #(
     .DmHaltAddr      ( DebugStart + 32'h800                    ),
     .DmExceptionAddr ( DebugStart + 32'h808                    ),
@@ -566,13 +560,11 @@ module sonata_system #(
     .double_fault_seen_o(core_double_fault_seen),
 
     .fetch_enable_i        ('1),
-    .alert_minor_o         (core_alert_minor),
-    .alert_major_internal_o(core_alert_major_internal),
-    .alert_major_bus_o     (core_alert_major_bus),
-    .core_sleep_o          (core_sleep)
+    .alert_minor_o         (),
+    .alert_major_internal_o(),
+    .alert_major_bus_o     (),
+    .core_sleep_o          ()
   );
-
-  assign pwm_o[0] = core_double_fault_seen | core_alert_minor | core_alert_major_internal | core_alert_major_bus | core_sleep;
 
   localparam int RamDepth = MemSize / 4;
 
@@ -657,7 +649,7 @@ module sonata_system #(
     .device_rvalid_o(device_rvalid[Pwm]),
     .device_rdata_o (device_rdata[Pwm]),
 
-    .pwm_o(pwm_o[PwmWidth-1:1])
+    .pwm_o(pwm_o)
   );
 
   uart #(
