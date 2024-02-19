@@ -2,10 +2,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-//TODO actually fix the lint errors
-/* verilator lint_off WIDTH */
-/* verilator lint_off UNUSED */
-
 package cheri_pkg;
 
   // bit field widths
@@ -442,15 +438,20 @@ $display("--- set_bounds: exact = %x, ovrflw = %x, exp1 = %x, exp2 = %x, exp = %
 $display("--- set_bounds:  b1 = %x, t1 = %x, b2 = %x, t2 = %x", base1, top1, base2, top2);
 `endif
 
-    // Note in this case always addr >= base, but top < base or address is possible
-    //   so - addr_hi = FALSE, top_cor can only be either either 0 or +1;
+    // top/base correction values
+    //   Note the new base == addr >> exp, so addr_hi == FALSE, thus base_cor == 0
+    //   as such, top_cor can only be either either 0 or +1;
     out_cap.top_cor  = tophi ? 2'b00 : 2'b01;
     out_cap.base_cor = 2'b00;
 
     if (req_exact & (topoff | baseoff)) out_cap.valid = 1'b0;
 
     // we used the "requested top" to verify the results against original bounds
-    if (top33req > in_cap.top33 ) out_cap.valid = 1'b0;
+    // also compare address >= old base 32 to handle exp=24 case
+    //   exp = 24 case: can have addr < base (not covered by representibility checking);
+    //   other exp cases: always addr >= base when out_cap.tag == 1
+    if ((top33req > in_cap.top33) || (addr < in_cap.base32)) 
+      out_cap.valid = 1'b0;
 
     return out_cap;
   endfunction
@@ -863,14 +864,12 @@ $display("--- set_bounds:  b1 = %x, t1 = %x, b2 = %x, t2 = %x", base1, top1, bas
   function automatic logic [4:0] vio_cause_enc (logic bound_vio, logic[W_PVIO-1:0] perm_vio_vec);
     logic [4:0] vio_cause;
     
-    if (bound_vio)
-      vio_cause = 5'h1;
-    else if (perm_vio_vec[PVIO_TAG])
+    if (perm_vio_vec[PVIO_TAG])
       vio_cause = 5'h2;
     else if (perm_vio_vec[PVIO_SEAL])
       vio_cause = 5'h3;
     else if (perm_vio_vec[PVIO_EX])
-      vio_cause = 5'h3;
+      vio_cause = 5'h11;
     else if (perm_vio_vec[PVIO_LD])
       vio_cause = 5'h12;
     else if (perm_vio_vec[PVIO_SD])
@@ -881,6 +880,8 @@ $display("--- set_bounds:  b1 = %x, t1 = %x, b2 = %x, t2 = %x", base1, top1, bas
       vio_cause = 5'h16;
     else if (perm_vio_vec[PVIO_ASR])
       vio_cause = 5'h18;
+    else if (bound_vio)
+      vio_cause = 5'h1;
     else
       vio_cause = 5'h0;
 
@@ -888,6 +889,3 @@ $display("--- set_bounds:  b1 = %x, t1 = %x, b2 = %x, t2 = %x", base1, top1, bas
   endfunction
  
 endpackage
-
-/* verilator lint_on WIDTH */
-/* verilator lint_on UNUSED */

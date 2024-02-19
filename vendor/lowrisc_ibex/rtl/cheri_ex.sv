@@ -2,11 +2,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-//TODO actually fix lint errors
-/* verilator lint_off WIDTH */
-/* verilator lint_off UNUSED */
-/* verilator lint_off UNDRIVEN */
-
 module cheri_ex import cheri_pkg::*; #(
   parameter bit          WritebackStage = 1'b0,
   parameter int unsigned HeapBase,
@@ -14,8 +9,7 @@ module cheri_ex import cheri_pkg::*; #(
   parameter int unsigned TSMapSize,
   parameter bit          CheriPPLBC  = 1'b1,
   parameter bit          CheriSBND2  = 1'b0,
-  parameter bit          CheriStkZ   = 1'b1,
-  parameter bit          StkZ1Cycle  = 1'b1
+  parameter bit          CheriStkZ   = 1'b1
 )(
    // Clock and Reset
   input  logic          clk_i,
@@ -74,9 +68,9 @@ module cheri_ex import cheri_pkg::*; #(
 
   output logic          cheri_ex_valid_o,
   output logic          cheri_ex_err_o,
-  output logic [10:0]   cheri_ex_err_info_o,
+  output logic [11:0]   cheri_ex_err_info_o,
   output logic          cheri_wb_err_o,
-  output logic [10:0]   cheri_wb_err_info_o,
+  output logic [11:0]   cheri_wb_err_info_o,
 
   // lsu interface
   output logic          lsu_req_o,
@@ -214,9 +208,9 @@ module cheri_ex import cheri_pkg::*; #(
   logic          lc_cglg, lc_csdlm, lc_ctag;
   logic  [31:0]  pc_id_nxt;
 
-  full_cap_t     setaddr1_outcap, setaddr2_outcap, setbounds_outcap;
-  logic  [10:0]  cheri_wb_err_info_q, cheri_wb_err_info_d;
-  logic  [10:0]  cheri_ex_err_info_q, cheri_ex_err_info_d;
+  full_cap_t     setaddr1_outcap, setbounds_outcap;
+  logic  [11:0]  cheri_wb_err_info_q, cheri_wb_err_info_d;
+  logic  [11:0]  cheri_ex_err_info_q, cheri_ex_err_info_d;
   logic          set_bounds_done;
 
   logic   [4:0]  cheri_err_cause, rv32_err_cause;
@@ -551,7 +545,7 @@ module cheri_ex import cheri_pkg::*; #(
           end
           cheri_rf_we_raw    = ~perm_vio;
           cheri_ex_valid_raw = 1'b1;
-          cheri_ex_err_raw   = perm_vio; 
+          cheri_wb_err_raw   = perm_vio; 
         end
       (cheri_operator_i[CJALR] | cheri_operator_i[CJAL]):
         begin                  // cd <-- pcc; pcc <-- cs1/pc+offset; pcc.address[0] <--'0'; pcc.sealed <--'0'
@@ -692,7 +686,7 @@ module cheri_ex import cheri_pkg::*; #(
     setaddr1_outcap = set_address(tfcap1, taddr1, 0, 0);
   end
 
-  bound_req_t bound_req1;
+  bound_req_t bound_req1, bound_req2;
 
   always_comb begin: set_bounds_comb
     logic [31:0] newlen;
@@ -730,10 +724,31 @@ module cheri_ex import cheri_pkg::*; #(
 
     bound_req1 = prep_bound_req (tmp_addr, newlen);
 
-    setbounds_outcap = set_bounds(tfcap3, tmp_addr, bound_req1, req_exact);
+    setbounds_outcap = set_bounds(tfcap3, tmp_addr, bound_req2, req_exact);
   end
 
-  assign set_bounds_done = 1'b1;
+  if (CheriSBND2) begin
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        bound_req2      <= '{0, 0, 0};
+        set_bounds_done <= 1'b0;
+      end else begin
+        bound_req2      <= bound_req1;
+        // set_bounds_done is asserted in the 2nd cycle of execution when SBD2 == 1
+        // note in ibex it actaully is ok to hold set_bounds_done high for both cycles
+        // since the multicycle control logic won't look at ex_valid till the 2nd cycle
+        // however this is the cleaner solution.
+        set_bounds_done <= (cheri_operator_i[CSET_BOUNDS] | cheri_operator_i[CSET_BOUNDS_IMM] |
+                            cheri_operator_i[CSET_BOUNDS_EX] | cheri_operator_i[CRRL] | 
+                            cheri_operator_i[CRAM]) & cheri_exec_id_i & ~set_bounds_done ;
+      end
+    end
+  end else begin
+    assign bound_req2      = bound_req1;
+    assign set_bounds_done = 1'b1;
+  end
+
+
 
   // address bound and permission checks for
   //    - cheri no-LSU instructions
@@ -746,6 +761,9 @@ module cheri_ex import cheri_pkg::*; #(
   //   that goes from instr_executing -> rv32_lsu_req -> lsu_error -> cheri_ex_err -> instr_executing
   //   it's not a real runtime issue but it does confuses timing tools so let's split for now.
   //   Besides - note checking/lsu_cheri_err_o is one timing critical path
+  logic [31:0] rv32_ls_chkaddr;
+  assign rv32_ls_chkaddr = rv32_lsu_addr_i;
+
   always_comb begin : check_rv32
     logic [31:0] top_offset;
     logic [32:0] top_bound;
@@ -755,7 +773,7 @@ module cheri_ex import cheri_pkg::*; #(
     logic        top_size_ok;
 
     // generate the address used to check top bound violation
-    base_chkaddr = rv32_lsu_addr_i;
+    base_chkaddr = rv32_ls_chkaddr;
 
     if (rv32_lsu_type_i == 2'b00) begin
       top_offset  = 32'h4;
@@ -802,16 +820,16 @@ module cheri_ex import cheri_pkg::*; #(
   //      so that we can mux the inputs and save some area
 
 
+  logic [31:0] cheri_ls_chkaddr;
+  assign cheri_ls_chkaddr = cs1_addr_plusimm;
+
   always_comb begin : check_cheri
     logic [31:0] top_offset;
     logic [32:0] top_bound;
     logic [31:0] base_bound;
     logic [32:0] top_chkaddr, base_chkaddr;
     logic        top_vio, base_vio, top_equal;
-    logic        is_ok_type;
-
-    // CSEAL/CUNSEAL, CIS_SUBSET, CLC/CSC checks are done here
-    // CJAL/CJALR use separate set_addr checking for timing
+    logic        cs2_bad_type;
 
     // generate the address used to check top bound violation
     if (cheri_operator_i[CSEAL] | cheri_operator_i[CUNSEAL])
@@ -821,7 +839,7 @@ module cheri_ex import cheri_pkg::*; #(
     else if (cheri_operator_i[CIS_SUBSET])
       base_chkaddr = rf_fullcap_b.base32;  // cs2.base32
     else   // CLC/CSC
-      base_chkaddr = cs1_addr_plusimm;     // cs1.address + offset
+      base_chkaddr = cheri_ls_chkaddr;     // cs1.address + offset
 
     if (cheri_operator_i[CIS_SUBSET])
       top_chkaddr = rf_fullcap_b.top33;
@@ -855,7 +873,9 @@ module cheri_ex import cheri_pkg::*; #(
 
     if (debug_mode_i)
       addr_bound_vio = 1'b0;
-    else if (is_cap | cheri_operator_i[CIS_SUBSET]) 
+    else if (is_cap) 
+      addr_bound_vio = top_vio | base_vio | top_equal;
+    else if (cheri_operator_i[CIS_SUBSET]) 
       addr_bound_vio = top_vio | base_vio;
     else if (cheri_operator_i[CJAL] | cheri_operator_i[CJALR])
       addr_bound_vio = top_vio | base_vio | top_equal;
@@ -864,31 +884,33 @@ module cheri_ex import cheri_pkg::*; #(
     else
       addr_bound_vio = 1'b0;
 
-
     // main permission logic
     perm_vio_vec = 0;
-    is_ok_type   = 1'b0;
+    cs2_bad_type = 1'b0;
 
+    // note cseal/unseal/cis_subject doesn't generate exceptions, 
+    // so for all exceptions, violations can always be attributed to cs1, thus no need to further split
+    // exceptions based on source operands.
     if (is_load_cap) begin
       perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_a.valid;
       perm_vio_vec[PVIO_SEAL]  = is_cap_sealed(rf_fullcap_a);
       perm_vio_vec[PVIO_LD]    = ~(rf_fullcap_a.perms[PERM_LD]);
-      perm_vio_vec[PVIO_ALIGN] = (cs1_addr_plusimm[2:0] != 0);
+      perm_vio_vec[PVIO_ALIGN] = (cheri_ls_chkaddr[2:0] != 0);
     end else if (is_store_cap) begin
       perm_vio_vec[PVIO_TAG]   = (~rf_fullcap_a.valid); 
       perm_vio_vec[PVIO_SEAL]  = is_cap_sealed(rf_fullcap_a);
       perm_vio_vec[PVIO_SD]    = ~rf_fullcap_a.perms[PERM_SD];
       perm_vio_vec[PVIO_SC]    = (~rf_fullcap_a.perms[PERM_MC] && rf_fullcap_b.valid);
-      perm_vio_vec[PVIO_ALIGN] = (cs1_addr_plusimm[2:0] != 0); 
+      perm_vio_vec[PVIO_ALIGN] = (cheri_ls_chkaddr[2:0] != 0); 
       perm_vio_vec[PVIO_SLC]   = ~rf_fullcap_a.perms[PERM_SL] && rf_fullcap_b.valid && ~rf_fullcap_b.perms[PERM_GL];
     end else if (cheri_operator_i[CSEAL]) begin
-      is_ok_type = rf_fullcap_a.perms[PERM_EX] ? 
-                   ((rf_rdata_b[31:3]!=0)||(rf_rdata_b[2:0]==0)||(rf_rdata_b[2:0]==3'h4)||(rf_rdata_b[2:0]==3'h5)) : 
-                   (~rf_fullcap_a.perms[PERM_EX] && ((|rf_rdata_b[31:4]) || (rf_rdata_b[3:0] <= 8)));
+      cs2_bad_type = rf_fullcap_a.perms[PERM_EX] ? 
+                     ((rf_rdata_b[31:3]!=0)||(rf_rdata_b[2:0]==0)||(rf_rdata_b[2:0]==3'h4)||(rf_rdata_b[2:0]==3'h5)) : 
+                     ((|rf_rdata_b[31:4]) || (rf_rdata_b[3:0] <= 8));
       // cs2.addr check : ex: 0-7, non-ex: 9-15
       perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_a.valid || ~rf_fullcap_b.valid;
       perm_vio_vec[PVIO_SEAL]  = is_cap_sealed(rf_fullcap_a) || is_cap_sealed(rf_fullcap_b) || 
-                                  (~rf_fullcap_b.perms[PERM_SE]) || is_ok_type;
+                                  (~rf_fullcap_b.perms[PERM_SE]) || cs2_bad_type;
     end else if (cheri_operator_i[CUNSEAL]) begin
       perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_a.valid || ~rf_fullcap_b.valid; 
       perm_vio_vec[PVIO_SEAL]  = (~is_cap_sealed(rf_fullcap_a)) || is_cap_sealed(rf_fullcap_b) ||
@@ -918,35 +940,49 @@ module cheri_ex import cheri_pkg::*; #(
   //
   // fault case mtval generation
   // report to csr as mtval
+  logic ls_addr_misaligned_only;
 
   assign cheri_ex_err_info_o = cheri_ex_err_info_q;
   assign cheri_wb_err_info_o = cheri_wb_err_info_q;
 
-  assign cheri_wb_err_d      = cheri_wb_err_raw & cheri_exec_id_i & ~debug_mode_i;
+  assign cheri_wb_err_d      = cheri_wb_err_raw & cheri_exec_id_i & cheri_ex_valid_raw & ~debug_mode_i;
+
+  // addr_bound_vio is the timing optimized version (gating data_req) 
+  // However we need to generate full version of addr_bound_vio to match the sail exception 
+  // priority definition (bound_vio has higher priority over alignment_error).
+  // this has less timing impact since it goes to a flop stage
+  logic addr_bound_vio_ext;
+  logic [32:0] cheri_top_chkaddr_ext;
+
+  assign cheri_top_chkaddr_ext = cheri_ls_chkaddr + 8;   // extend to 33 bit for compare
+  assign addr_bound_vio_ext = is_cap ?  addr_bound_vio | (cheri_top_chkaddr_ext > rf_fullcap_a.top33) :
+                              addr_bound_vio;
 
   always_comb begin : err_cause_comb 
-    cheri_err_cause  = vio_cause_enc(addr_bound_vio, perm_vio_vec);
-    rv32_err_cause  = vio_cause_enc(addr_bound_vio_rv32, perm_vio_vec_rv32);
+    cheri_err_cause  = vio_cause_enc(addr_bound_vio_ext, perm_vio_vec);
+    rv32_err_cause   = vio_cause_enc(addr_bound_vio_rv32, perm_vio_vec_rv32);
+
+    ls_addr_misaligned_only = perm_vio_vec[PVIO_ALIGN] && (cheri_err_cause == 0);
     
-    if (cheri_operator_i[CCSR_RW] & cheri_ex_err_raw & cheri_exec_id_i)
-      // cspecialrw traps
-      cheri_ex_err_info_d = {1'b1, cheri_cs2_dec_i, cheri_err_cause};
-    else if (cheri_exec_id_i & ~CheriPPLBC & cheri_tsafe_en_i & is_load_cap & cheri_lsu_err)  
+    if (cheri_exec_id_i & ~CheriPPLBC & cheri_tsafe_en_i & is_load_cap & cheri_lsu_err)  
       // 2-stage ppl load/store, error treated as EX error, cheri CLC check error
-      cheri_ex_err_info_d = {1'b0, rf_raddr_a_i, cheri_err_cause};
+      cheri_ex_err_info_d = {2'b00, rf_raddr_a_i, cheri_err_cause};
     else if (cheri_exec_id_i & ~CheriPPLBC & cheri_tsafe_en_i & is_load_cap & clbc_err)  
       // 2-stage ppl load/store, error treated as EX error, memory error
-      cheri_ex_err_info_d = {1'b0, rf_raddr_a_i, 5'h1f};    
+      cheri_ex_err_info_d = {2'b00, rf_raddr_a_i, 5'h1f};    
     else 
       cheri_ex_err_info_d = cheri_ex_err_info_q;
 
     // cheri_wb_err_raw is already qualified by instr
-    if (cheri_wb_err_raw  & cheri_exec_id_i)
-      cheri_wb_err_info_d = {1'b0, rf_raddr_a_i, cheri_err_cause};
+    if (cheri_operator_i[CCSR_RW] & cheri_wb_err_raw & cheri_exec_id_i)
+      // cspecialrw traps
+      cheri_wb_err_info_d = {1'b0, 1'b1, cheri_cs2_dec_i, cheri_err_cause};
+    else if (cheri_wb_err_raw  & cheri_exec_id_i)
+      cheri_wb_err_info_d = {1'b0, 1'b0, rf_raddr_a_i, cheri_err_cause};
     else if ((is_load_cap | is_store_cap) & cheri_lsu_err & cheri_exec_id_i)
-      cheri_wb_err_info_d = {1'b0, rf_raddr_a_i, cheri_err_cause};
-    else if (rv32_lsu_req_i & rv32_lsu_err & cheri_exec_id_i)
-      cheri_wb_err_info_d = {1'b0, rf_raddr_a_i, rv32_err_cause};
+      cheri_wb_err_info_d = {ls_addr_misaligned_only, 1'b0, rf_raddr_a_i, cheri_err_cause};
+    else if (rv32_lsu_req_i & rv32_lsu_err)
+      cheri_wb_err_info_d = {1'b0, 1'b0, rf_raddr_a_i, rv32_err_cause};
     else 
       cheri_wb_err_info_d = cheri_wb_err_info_q;
   end 
@@ -957,8 +993,11 @@ module cheri_ex import cheri_pkg::*; #(
       cheri_wb_err_info_q <= 'h0;
       cheri_ex_err_info_q <= 'h0;
     end else begin
-      // Simple flop here works since if cheri_wb_err, lsu request won't be generated 
-      //   so wb stage only takes 1 cycle. QQQ
+      // Simple flop here works since
+      //  -- cheri_wb_err is gated by cheri_exec_id/ex_valid
+      //  --  all non-load/store cheriot instructions that can generate exceptions 
+      //      only takes 1 cycle in ID/EX stage
+      //  -- faulted non-load/store instruction can only stay 1 cycle in wb_stage
       cheri_wb_err_q      <= cheri_wb_err_d; 
       cheri_wb_err_info_q <= cheri_wb_err_info_d;
       cheri_ex_err_info_q <= cheri_ex_err_info_d;
@@ -1073,13 +1112,7 @@ module cheri_ex import cheri_pkg::*; #(
 logic cpu_stkz_stall0, cpu_stkz_stall1;
 logic cpu_stkz_err;
 
-if (CheriStkZ & ~StkZ1Cycle) begin
-  // load/store takes 2 cycles when stkz_active
-  // always stall both lsu_req and cpu_lsu_dec duing first_cycle
-  assign lsu_req_o         = ~cpu_stkz_stall0 & (instr_is_cheri_i ? cheri_lsu_req : rv32_lsu_req_i);
-  assign cpu_lsu_dec_o     = ~cpu_stkz_stall1 & ((instr_is_cheri_i && is_cap) | instr_is_rv32lsu_i);  
-
-end else if (CheriStkZ & StkZ1Cycle) begin
+if (CheriStkZ) begin
   // load/store takes 1 cycle when stkz_active
   assign lsu_req_o         = ~cpu_stkz_stall0 & (instr_is_cheri_i ? cheri_lsu_req : rv32_lsu_req_i);
   assign cpu_lsu_dec_o     = ~cpu_stkz_stall1 & ((instr_is_cheri_i && is_cap) | instr_is_rv32lsu_i);  
@@ -1145,35 +1178,7 @@ end
   // Stack fast clearing support
   //
 
-  if (CheriStkZ & ~StkZ1Cycle) begin
-    logic lsu_addr_in_range, stkz_stall_q;
-
-    // can't directly use csr_mshwm_i (high watermark) as the stack base here
-    // since mshwm itself will be updated by lsu write request
-    assign lsu_addr_in_range = (cpu_lsu_addr[31:4] >= stkz_base_i[31:4]) && 
-                               (cpu_lsu_addr[31:2] < stkz_ptr_i[31:2]);
-
-    assign cpu_stkz_stall0 = (stkz_active_i & instr_first_cycle_i) | stkz_stall_q; 
-    assign cpu_stkz_stall1 = cpu_stkz_stall0;
-
-    // load/store takes 2 cycles when stkz_active. 
-    //   -- we are doing this such that cpu_lsu_dec doesn't have to wait for address range
-    //      check results combinatorially
-    //   -- Note stkz_active_i is asserted synchronously by writing to the new stkz_ptr CSR. 
-    //      As such it is not possible for active to go from '0' to '1' in the middle of an 
-    //      load/store instruction when we want to keep lsu_req high while waiting for lsu_req_done
-    //      QQQ may need an assertion for this. 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        stkz_stall_q <= 1'b0;
-        cpu_stkz_err <= 1'b0;
-      end else begin
-        stkz_stall_q <= stkz_active_i & lsu_addr_in_range;
-        cpu_stkz_err <= lsu_req_done_i & stkz_abort_i & lsu_addr_in_range;    // QQQ see the 1cyle case
-      end
-    end
-
-  end else if (CheriStkZ & StkZ1Cycle) begin
+  if (CheriStkZ) begin
     logic lsu_addr_in_range, stkz_stall_q;
 
     assign lsu_addr_in_range = (cpu_lsu_addr[31:4] >= stkz_base_i[31:4]) && 
@@ -1185,6 +1190,9 @@ end
     // - however in the first cycle we speculatively still assert cpu_lsu_dec_o to let LSU choose 
     //   the address from cpu core (and hold back stkz/tbre_req). In the next cycle we can deassert
     //   cpu_lsu_dec_o to let stkz/tbre_req go through
+    //   -- Note stkz_active_i is asserted synchronously by writing to the new stkz_ptr CSR. 
+    //      As such it is not possible for active to go from '0' to '1' in the middle of an 
+    //      load/store instruction when we want to keep lsu_req high while waiting for lsu_req_done
     assign cpu_stkz_stall0 = (instr_first_cycle_i & stkz_active_i & lsu_addr_in_range) | stkz_stall_q; 
     assign cpu_stkz_stall1 = ~instr_first_cycle_i & stkz_stall_q;
 
@@ -1236,8 +1244,5 @@ end
                         result_cap_o.otype, result_cap_o.cperms,     // 41:32
                         result_data_o};                              // 31:0
 
-endmodule
 
-/* verilator lint_on WIDTH */
-/* verilator lint_on UNUSED */
-/* verilator lint_on UNDRIVEN */
+endmodule

@@ -16,9 +16,6 @@
 
 `include "prim_assert.sv"
 
-//TODO fix lint errors
-/* verilator lint_off UNUSED */
-
 module ibex_cs_registers import cheri_pkg::*;  #(
   parameter bit               DbgTriggerEn      = 0,
   parameter int unsigned      DbgHwBreakNum     = 1,
@@ -174,7 +171,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
     | (0                 << 13)  // N - User level interrupts supported
     | (0                 << 18)  // S - Supervisor mode implemented
     | (1                 << 20)  // U - User mode implemented
-    | (32'(CHERIoTEn)    << 23)  // X - Non-standard extensions present
+    | (CHERIoTEn         << 23)  // X - Non-standard extensions present
     | (32'(CSR_MISA_MXL) << 30); // M-XLEN
 
   typedef struct packed {
@@ -864,7 +861,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
 
   // only write CSRs during one clock cycle
 
-  // enforcing the CHERI CSR access policy. QQQ
+  // enforcing the CHERI CSR access policy. 
   //  -- is reading zero back ok? or do we need to generate illegal access exception??
   //  -- also note IBEX didn't implement user-mode TIME/counters.
   //     for now we are allowing reading the M-mode counters (assuming only use single priv level)
@@ -1978,5 +1975,3 @@ module ibex_cs_registers import cheri_pkg::*;  #(
   end
 
 endmodule
-
-/* verilator lint_on UNUSED */

@@ -2,10 +2,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-//TODO actually fix lint issues
-/* verilator lint_off WIDTH */
-/* verilator lint_off UNUSED */
-
 module cheri_trvk_stage #(
   parameter int unsigned HeapBase,
   parameter int unsigned TSMapSize
@@ -134,6 +130,3 @@ module cheri_trvk_stage #(
   end
 
 endmodule
-
-/* verilator lint_on WIDTH */
-/* verilator lint_on UNUSED */

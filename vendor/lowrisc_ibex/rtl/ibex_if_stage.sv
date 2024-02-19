@@ -16,9 +16,6 @@
 
 `include "prim_assert.sv"
 
-//TODO actually fix lints
-/* verilator lint_off UNUSED */
-
 module ibex_if_stage import ibex_pkg::*; import cheri_pkg::*; #(
   parameter int unsigned DmHaltAddr        = 32'h1A110800,
   parameter int unsigned DmExceptionAddr   = 32'h1A110808,
@@ -345,13 +342,13 @@ module ibex_if_stage import ibex_pkg::*; import cheri_pkg::*; #(
   // An error can come from the instruction address, or the next instruction address for unaligned,
   // uncompressed instructions.
   assign if_instr_pmp_err = pmp_err_if_i |
-                            (if_instr_addr[2] & ~instr_is_compressed & pmp_err_if_plus2_i);
+                            (if_instr_addr[1] & ~instr_is_compressed & pmp_err_if_plus2_i);
 
   // Combine bus errors and pmp errors
   assign if_instr_err = if_instr_bus_err | if_instr_pmp_err | cheri_acc_vio;
 
   // Capture the second half of the address for errors on the second part of an instruction
-  assign if_instr_err_plus2 = ((if_instr_addr[2] & ~instr_is_compressed & pmp_err_if_plus2_i) |
+  assign if_instr_err_plus2 = ((if_instr_addr[1] & ~instr_is_compressed & pmp_err_if_plus2_i) |
                                fetch_err_plus2) & ~pmp_err_if_i;
 
   // let's only check this in pure-cap mode. otherwise jalr/ret gives so much headache
@@ -783,5 +780,3 @@ module ibex_if_stage import ibex_pkg::*; import cheri_pkg::*; #(
   `ASSERT(IbexInstrAddrUnaligned, instr_req_o |-> (instr_addr_o[1:0] == 2'b00))
 
 endmodule
-
-/* verilator lint_on UNUSED */

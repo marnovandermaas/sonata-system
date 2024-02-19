@@ -3,10 +3,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-//TODO actually fix the lint errors
-/* verilator lint_off WIDTH */
-/* verilator lint_off UNUSED */
-
 module cheri_regfile import cheri_pkg::*; #(
   parameter int unsigned NREGS      = 32,
   parameter int unsigned NCAPS      = 32,
@@ -41,7 +37,7 @@ module cheri_regfile import cheri_pkg::*; #(
   input  logic          [4:0]   trvk_addr_i,
   input  logic                  trvk_en_i,
   input  logic                  trvk_clrtag_i,
-  input  logic          [6:0]   trvk_par_i,     // make sure this is included in lockstep compare QQQ     
+  input  logic          [6:0]   trvk_par_i,     // make sure this is included in lockstep compare      
   input  logic          [4:0]   trsv_addr_i,
   input  logic                  trsv_en_i,
   input  logic          [6:0]   trsv_par_i,     
@@ -184,7 +180,7 @@ module cheri_regfile import cheri_pkg::*; #(
       logic  [4:0] trvk_addr_q;
       logic        trvk_en_q;
       logic        trvk_clrtag_q;
-      logic  [6:0] trvk_par_q;     // make sure this is included in lockstep compare QQQ
+      logic  [6:0] trvk_par_q;
       logic  [4:0] trsv_addr_q;
       logic        trsv_en_q;
       logic  [6:0] trsv_par_q;
@@ -341,28 +337,33 @@ module cheri_regfile import cheri_pkg::*; #(
   
   assign alert_o   = pplbc_alert | reg_rdbk_err;
 
+  reg_cap_t rcap_a_rvkd, rcap_b_rvkd;
+
   if (TRVKBypass) begin
     // Bypass the registier update cycle and directly update the read ports
     always_comb begin
       reg_rdy_o = reg_rdy_vec | ({NREGS{trvk_en_i}} & {trvk_dec, 1'b0});
       
-      rcap_a_o = rcap_a;
+      rcap_a_rvkd = rcap_a;
       if (trvk_en_i && trvk_clrtag_i && (trvk_addr_i == raddr_a_i))
-        rcap_a_o.valid = 1'b0;
+        rcap_a_rvkd.valid = 1'b0;
+      rcap_a_o = rcap_a_rvkd;
 
-      rcap_b_o = rcap_b;
+      rcap_b_rvkd = rcap_b;
       if (trvk_en_i && trvk_clrtag_i && (trvk_addr_i == raddr_b_i))
-        rcap_b_o.valid = 1'b0;
+        rcap_b_rvkd.valid = 1'b0;
+      rcap_b_o = rcap_b_rvkd;
+    
     end
   end else begin
     assign reg_rdy_o = reg_rdy_vec;
-    assign rcap_a_o  = rcap_a;
-    assign rcap_b_o  = rcap_b;
+
+    assign rcap_a_rvkd = rcap_a;
+    assign rcap_a_o    = rcap_a_rvkd;
+    assign rcap_b_rvkd = rcap_b;
+    assign rcap_b_o  = rcap_b_rvkd;
   end
    
 
 
 endmodule
-
-/* verilator lint_on WIDTH */
-/* verilator lint_on UNUSED */

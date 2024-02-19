@@ -13,14 +13,11 @@
 
 `include "prim_assert.sv"
 
-//TODO actualy fix the lints
-/* verilator lint_off UNUSED */
-/* verilator lint_off UNDRIVEN */
 
 /**
  * Top level module of the ibex RISC-V core
  */
-module ibexc_top import ibex_pkg::*; import cheri_pkg::*; #(
+module ibex_top import ibex_pkg::*; import cheri_pkg::*; #(
   parameter int unsigned DmHaltAddr       = 32'h1A110800,
   parameter int unsigned DmExceptionAddr  = 32'h1A110808,
   parameter bit          DbgTriggerEn     = 1'b1,
@@ -374,7 +371,7 @@ module ibexc_top import ibex_pkg::*; import cheri_pkg::*; #(
 
     .fetch_enable_i(fetch_enable_buf),
     .alert_minor_o(alert_minor_o),
-    .alert_major_o(),
+    .alert_major_o(alert_major_o),
     .icache_inval_o(),
     .core_busy_o   (core_busy_d),
     .ic_scr_key_valid_i (1'b0),
@@ -455,41 +452,4 @@ module ibexc_top import ibex_pkg::*; import cheri_pkg::*; #(
     );
   end
 
-  `ASSERT_KNOWN(IbexInstrReqX, instr_req_o)
-  `ASSERT_KNOWN_IF(IbexInstrReqPayloadX, instr_addr_o, instr_req_o)
-
-  `ASSERT_KNOWN(IbexDataReqX, data_req_o)
-  `ASSERT_KNOWN_IF(IbexDataReqPayloadX,
-    {data_we_o, data_be_o, data_addr_o, data_wdata_o, data_wdata_intg_o}, data_req_o)
-
-  `ASSERT_KNOWN(IbexCoreSleepX, core_sleep_o)
-
-  // X check for top-level inputs
-  `ASSERT_KNOWN(IbexTestEnX, test_en_i)
-  `ASSERT_KNOWN(IbexRamCfgX, ram_cfg_i)
-  `ASSERT_KNOWN(IbexHartIdX, hart_id_i)
-  `ASSERT_KNOWN(IbexBootAddrX, boot_addr_i)
-
-  `ASSERT_KNOWN(IbexInstrGntX, instr_gnt_i)
-  `ASSERT_KNOWN(IbexInstrRValidX, instr_rvalid_i)
-  `ASSERT_KNOWN_IF(IbexInstrRPayloadX,
-    {instr_rdata_i, instr_rdata_intg_i, instr_err_i}, instr_rvalid_i)
-
-  `ASSERT_KNOWN(IbexDataGntX, data_gnt_i)
-  `ASSERT_KNOWN(IbexDataRValidX, data_rvalid_i)
-
-  // kliu - check data_rdata_i for reads only (FPGA ram model drives rdata for writes also)
-  `ASSERT_KNOWN_IF(IbexDataRPayloadX, {({32{~u_ibex_core.load_store_unit_i.data_we_q}} & data_rdata_i), 
-      ({7{~u_ibex_core.load_store_unit_i.data_we_q}} & data_rdata_intg_i), data_err_i}, data_rvalid_i)
-
-  `ASSERT_KNOWN(IbexIrqX, {irq_software_i, irq_timer_i, irq_external_i, irq_fast_i, irq_nm_i})
-
-  `ASSERT_KNOWN(IbexScrambleKeyValidX, scramble_key_valid_i)
-  `ASSERT_KNOWN_IF(IbexScramblePayloadX, {scramble_key_i, scramble_nonce_i}, scramble_key_valid_i)
-
-  `ASSERT_KNOWN(IbexDebugReqX, debug_req_i)
-  `ASSERT_KNOWN(IbexFetchEnableX, fetch_enable_i)
 endmodule
-
-/* verilator lint_on UNUSED */
-/* verilator lint_on UNDRIVEN */

@@ -209,9 +209,9 @@ module ibex_id_stage import cheri_pkg::*; #(
 
   input  logic                      cheri_ex_valid_i,
   input  logic                      cheri_ex_err_i,
-  input  logic [10:0]               cheri_ex_err_info_i,
+  input  logic [11:0]               cheri_ex_err_info_i,
   input  logic                      cheri_wb_err_i,
-  input  logic [10:0]               cheri_wb_err_info_i,
+  input  logic [11:0]               cheri_wb_err_info_i,
   input  logic                      cheri_branch_req_i,   // from cheri EX
   input  logic [31:0]               cheri_branch_target_i
 );
@@ -1162,6 +1162,7 @@ module ibex_id_stage import cheri_pkg::*; #(
     logic unused_outstanding_store_wb;
     logic unused_wb_exception;
     logic [31:0] unused_rf_wdata_fwd_wb;
+    logic unused_id_exception;
 
     assign unused_data_req_done_ex     = lsu_req_done_i;
     assign unused_rf_waddr_wb          = rf_waddr_wb_i;
@@ -1170,6 +1171,7 @@ module ibex_id_stage import cheri_pkg::*; #(
     assign unused_outstanding_store_wb = outstanding_store_wb_i;
     assign unused_wb_exception         = wb_exception;
     assign unused_rf_wdata_fwd_wb      = rf_wdata_fwd_wb_i;
+    assign unused_id_exception         = id_exception;
 
     assign instr_type_wb_o = WB_INSTR_OTHER;
     assign stall_wb        = 1'b0;
@@ -1178,9 +1180,6 @@ module ibex_id_stage import cheri_pkg::*; #(
 
     assign instr_id_done_o = instr_done;
   end
-
-  logic unused_id_exception;
-  assign unused_id_exception         = id_exception;
 
   // Signal which instructions to count as retired in minstret, all traps along with ebrk and
   // ecall instructions are not counted.

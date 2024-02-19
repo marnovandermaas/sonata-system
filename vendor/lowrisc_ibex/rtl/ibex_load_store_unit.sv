@@ -18,7 +18,7 @@
 `include "prim_assert.sv"
 `include "dv_fcov_macros.svh"
 
-module ibex_load_store_unit import cheri_pkg::*; #(
+module ibex_load_store_unit import ibex_pkg::*; import cheri_pkg::*; #(
   parameter bit CHERIoTEn = 1'b1,
   parameter bit MemCapFmt = 1'b0,
   parameter bit CheriTBRE = 1'b0
@@ -136,15 +136,8 @@ module ibex_load_store_unit import cheri_pkg::*; #(
   logic         lsu_resp_valid;
   logic         lsu_go;
 
-  typedef enum logic [3:0]  {
-    IDLE, WAIT_GNT_MIS, WAIT_RVALID_MIS, WAIT_GNT,
-    WAIT_RVALID_MIS_GNTS_DONE,
-    CTX_WAIT_GNT1, CTX_WAIT_GNT2, CTX_WAIT_RESP
-  } ls_fsm_e;
-
   ls_fsm_e ls_fsm_cs, ls_fsm_ns;
 
-  typedef enum logic [2:0] {CRX_IDLE, CRX_WAIT_RESP1, CRX_WAIT_RESP2} cap_rx_fsm_t;
   cap_rx_fsm_t cap_rx_fsm_q, cap_rx_fsm_d;
 
   logic         cap_lsw_err_q;
@@ -588,7 +581,7 @@ module ibex_load_store_unit import cheri_pkg::*; #(
 
       CTX_WAIT_RESP: begin        // only needed if mem allows 2 active req 
         if (cheri_pmode_i) begin
-          addr_incr_req_o = 1'b0;
+          addr_incr_req_o = 1'b1; // stay 1 to reduce unnecessary addr toggling
           data_req_o      = 1'b0;
           if (data_rvalid_i) ls_fsm_ns = IDLE;
         end else begin
@@ -692,7 +685,8 @@ module ibex_load_store_unit import cheri_pkg::*; #(
   // Outputs //
   /////////////
   logic all_resp;
-  assign data_or_pmp_err    = lsu_err_q | data_err_i | pmp_err_q | (cheri_pmode_i & (cheri_err_q | cap_lsw_err_q));
+  assign data_or_pmp_err    = lsu_err_q | data_err_i | pmp_err_q | (cheri_pmode_i & 
+                              (cheri_err_q | (resp_is_cap_q & cap_lsw_err_q)));
 
   assign all_resp           = data_rvalid_i | pmp_err_q | (cheri_pmode_i & cheri_err_q);
   assign lsu_resp_valid     = all_resp & (ls_fsm_cs == IDLE) ;
@@ -750,40 +744,5 @@ module ibex_load_store_unit import cheri_pkg::*; #(
   assign busy_o = (ls_fsm_cs != IDLE);
   // assign busy_tbre_o = (ls_fsm_cs != IDLE) & cur_req_is_tbre;
   assign busy_tbre_o = (ls_fsm_cs != IDLE) & cheri_pmode_i & req_is_tbre_q;
-  // assign busy_tbre_o = 1'b0;
-
-  //////////
-  // FCOV //
-  //////////
-
-  `DV_FCOV_SIGNAL(logic, ls_error_exception, (load_err_o | store_err_o) & ~pmp_err_q)
-  `DV_FCOV_SIGNAL(logic, ls_pmp_exception, (load_err_o | store_err_o) & pmp_err_q)
-
-  ////////////////
-  // Assertions //
-  ////////////////
-
-  // Selectors must be known/valid.
-  `ASSERT(IbexDataTypeKnown, (lsu_req_i | busy_o) |-> !$isunknown(lsu_type_i))
-  `ASSERT(IbexDataOffsetKnown, (lsu_req_i | busy_o) |-> !$isunknown(data_offset))
-  `ASSERT_KNOWN(IbexRDataOffsetQKnown, rdata_offset_q)
-  `ASSERT_KNOWN(IbexDataTypeQKnown, data_type_q)
-  `ASSERT(IbexLsuStateValid, ls_fsm_cs inside {
-      IDLE, WAIT_GNT_MIS, WAIT_RVALID_MIS, WAIT_GNT,
-      WAIT_RVALID_MIS_GNTS_DONE,
-      CTX_WAIT_GNT1, CTX_WAIT_GNT2, CTX_WAIT_RESP })
-
-  // Address must not contain X when request is sent.
-  `ASSERT(IbexDataAddrUnknown, data_req_o |-> !$isunknown(data_addr_o))
-
-  // Address must be word aligned when request is sent.
-  `ASSERT(IbexDataAddrUnaligned, data_req_o |-> (data_addr_o[1:0] == 2'b00))
-
-  // tbre_req_good and CPU req can't be active at the same time
-  // `ASSERT(TBREReqOverlap, $onehot0({lsu_req_i, tbre_req_good}))  -- no longer valid w/ stkZ.
-  // QQQ - we should look out for atomicity of access (no address/wdata change in the middle of a
-  //  transaction, etc.
-  
-
 
 endmodule
