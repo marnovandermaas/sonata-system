@@ -14,6 +14,8 @@
 `include "prim_assert.sv"
 `include "dv_fcov_macros.svh"
 
+/* verilator lint_off UNUSED */
+
 module ibex_controller #(
   parameter bit CHERIoTEn       = 1'b1,
   parameter bit WritebackStage  = 0,
@@ -765,7 +767,7 @@ module ibex_controller #(
                   csr_mtval_o = lsu_addr_last_i;
                 end else begin
                   exc_cause_o = EXC_CAUSE_CHERI_FAULT; 
-                  csr_mtval_o = cheri_wb_err_info_i[10:0];
+                  csr_mtval_o = {21'h0, cheri_wb_err_info_i[10:0]};
                 end
               end else begin
                 exc_cause_o = EXC_CAUSE_STORE_ACCESS_FAULT;
@@ -779,7 +781,7 @@ module ibex_controller #(
                   csr_mtval_o = lsu_addr_last_i;
                 end else begin
                   exc_cause_o = EXC_CAUSE_CHERI_FAULT;
-                  csr_mtval_o = cheri_wb_err_info_i[10:0];
+                  csr_mtval_o = {21'h0, cheri_wb_err_info_i[10:0]};
                 end
               end else begin
                 exc_cause_o = EXC_CAUSE_LOAD_ACCESS_FAULT;
@@ -789,13 +791,13 @@ module ibex_controller #(
             cheri_ex_err_prio: begin
               if (cheri_pmode_i) begin
                 exc_cause_o = EXC_CAUSE_CHERI_FAULT;
-                csr_mtval_o = cheri_ex_err_info_i[10:0];        
+                csr_mtval_o = {21'h0, cheri_ex_err_info_i[10:0]};
               end
             end
             cheri_wb_err_prio: begin
               if (cheri_pmode_i) begin
                 exc_cause_o = EXC_CAUSE_CHERI_FAULT;
-                csr_mtval_o = cheri_wb_err_info_i[10:0];
+                csr_mtval_o = {21'h0, cheri_wb_err_info_i[10:0]};
               end
             end
 
@@ -1008,3 +1010,5 @@ module ibex_controller #(
   `endif
 
 endmodule
+
+/* verilator lint_on UNUSED */

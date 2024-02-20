@@ -16,6 +16,8 @@
 
 `include "prim_assert.sv"
 
+/* verilator lint_off UNUSED */
+
 module ibex_if_stage import ibex_pkg::*; import cheri_pkg::*; #(
   parameter int unsigned DmHaltAddr        = 32'h1A110800,
   parameter int unsigned DmExceptionAddr   = 32'h1A110808,
@@ -353,11 +355,11 @@ module ibex_if_stage import ibex_pkg::*; import cheri_pkg::*; #(
 
   // let's only check this in pure-cap mode. otherwise jalr/ret gives so much headache
   // pre-calculate headroom to improve memory read timing
-  logic [2:0]  instr_len;
+  logic [2:0]  unused_instr_len;
   logic [32:0] instr_hdrm;
   logic        hdrm_ge4, hdrm_ge2, hdrm_ok;
 
-  assign instr_len  = (fetch_valid & ~fetch_err & instr_is_compressed) ? 2 : 4;
+  assign unused_instr_len  = (fetch_valid & ~fetch_err & instr_is_compressed) ? 2 : 4;
   assign instr_hdrm = pcc_cap_i.top33 - if_instr_addr;
   assign hdrm_ge4   = (instr_hdrm >= 4);
   assign hdrm_ge2   = (instr_hdrm >= 2);
@@ -780,3 +782,5 @@ module ibex_if_stage import ibex_pkg::*; import cheri_pkg::*; #(
   `ASSERT(IbexInstrAddrUnaligned, instr_req_o |-> (instr_addr_o[1:0] == 2'b00))
 
 endmodule
+
+/* verilator lint_on UNUSED */
