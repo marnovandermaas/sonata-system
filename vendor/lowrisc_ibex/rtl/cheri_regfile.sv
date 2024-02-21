@@ -3,8 +3,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-/* verilator lint_off UNUSED */
-
 module cheri_regfile import cheri_pkg::*; #(
   parameter int unsigned NREGS      = 32,
   parameter int unsigned NCAPS      = 32,
@@ -82,6 +80,7 @@ module cheri_regfile import cheri_pkg::*; #(
 
   // No flops for R0 as it's hard-wired to 0
   for (genvar i = 1; i < NREGS; i++) begin : g_rf_flops
+    logic cap_valid;
     
     
     always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -122,8 +121,8 @@ module cheri_regfile import cheri_pkg::*; #(
     assign rf_reg_par[i] = rf_reg_par_q[i];     
   end
 
-  assign rdata_a_o = DataWidth'({rf_reg_par[raddr_a_i], rf_reg[raddr_a_i]});
-  assign rdata_b_o = DataWidth'({rf_reg_par[raddr_b_i], rf_reg[raddr_b_i]});
+  assign rdata_a_o = {rf_reg_par[raddr_a_i], rf_reg[raddr_a_i]};
+  assign rdata_b_o = {rf_reg_par[raddr_b_i], rf_reg[raddr_b_i]};
 
   // capability meta data (MSW)
   for (genvar i = 1; i < NCAPS; i++) begin : g_cap_flops
@@ -144,8 +143,8 @@ module cheri_regfile import cheri_pkg::*; #(
     assign rf_cap[i] = rf_cap_q[i];
   end
 
-  assign rcap_a = (int'(raddr_a_i) < NCAPS) ? rf_cap[raddr_a_i] : NULL_REG_CAP;
-  assign rcap_b = (int'(raddr_b_i) < NCAPS) ? rf_cap[raddr_b_i] : NULL_REG_CAP;
+  assign rcap_a = (raddr_a_i < NCAPS) ? rf_cap[raddr_a_i] : NULL_REG_CAP;
+  assign rcap_b = (raddr_b_i < NCAPS) ? rf_cap[raddr_b_i] : NULL_REG_CAP;
 
   if (CheriPPLBC) begin : g_regrdy
 
@@ -368,5 +367,3 @@ module cheri_regfile import cheri_pkg::*; #(
 
 
 endmodule
-
-/* verilator lint_on UNUSED */

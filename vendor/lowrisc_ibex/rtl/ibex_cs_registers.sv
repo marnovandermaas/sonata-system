@@ -16,8 +16,6 @@
 
 `include "prim_assert.sv"
 
-/* verilator lint_off UNUSED */
-
 module ibex_cs_registers import cheri_pkg::*;  #(
   parameter bit               DbgTriggerEn      = 0,
   parameter int unsigned      DbgHwBreakNum     = 1,
@@ -125,6 +123,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
   input  logic                 csr_restore_mret_i,
   input  logic                 csr_restore_dret_i,
   input  logic                 csr_save_cause_i,
+  input  logic                 csr_mepcc_clrtag_i,
   input  ibex_pkg::exc_cause_e csr_mcause_i,
   input  logic [31:0]          csr_mtval_i,
   output logic                 illegal_csr_insn_o,     // access to non-existent CSR,
@@ -151,7 +150,8 @@ module ibex_cs_registers import cheri_pkg::*;  #(
   input  pcc_cap_t             pcc_cap_i,
   output pcc_cap_t             pcc_cap_o,
 
-  output logic                 csr_dbg_tclr_fault_o
+  output logic                 csr_dbg_tclr_fault_o,
+  output logic                 cheri_fatal_err_o
   );
 
   import ibex_pkg::*;
@@ -173,7 +173,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
     | (0                 << 13)  // N - User level interrupts supported
     | (0                 << 18)  // S - Supervisor mode implemented
     | (1                 << 20)  // U - User mode implemented
-    | (32'(CHERIoTEn)    << 23)  // X - Non-standard extensions present
+    | (CHERIoTEn         << 23)  // X - Non-standard extensions present
     | (32'(CSR_MISA_MXL) << 30); // M-XLEN
 
   typedef struct packed {
@@ -1778,7 +1778,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
   //////////////////////
 
   if (CHERIoTEn) begin: gen_scr
-    reg_cap_t     pcc_exc_reg_cap;
+    reg_cap_t     pcc_exc_cap;
     reg_cap_t     mtdc_cap;
     logic [31:0]  mtdc_data;
     reg_cap_t     mscratchc_cap;
@@ -1834,8 +1834,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
 
     assign pcc_cap_o = pcc_cap_q;
 
-    // assign pcc_exc_reg_cap = full2regcap(set_address(pcc_fullcap_o, exception_pc, 0, 0));
-    assign pcc_exc_reg_cap = pcc2regcap(pcc_cap_q, exception_pc);
+    assign pcc_exc_cap = pcc2mepcc(pcc_cap_q, exception_pc, csr_mepcc_clrtag_i);
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
@@ -1900,7 +1899,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
       if (!rst_ni)
         mepc_cap <= MEPC_RESET_CAP;
       else if (csr_save_cause_i & (~debug_csr_save_i) & (~debug_mode_i))
-        mepc_cap <= pcc_exc_reg_cap;
+        mepc_cap <= pcc_exc_cap;
       else if (cheri_pmode_i & mepc_en)            // legacy cssrw; NMI recover
         mepc_cap <= NULL_REG_CAP;
       else if (mepc_en_cheri)
@@ -1940,7 +1939,7 @@ module ibex_cs_registers import cheri_pkg::*;  #(
       if (!rst_ni)
         depc_cap <= NULL_REG_CAP;
       else if (csr_save_cause_i & debug_csr_save_i)
-        depc_cap <= pcc_exc_reg_cap;
+        depc_cap <= pcc_exc_cap;
       else if (depc_en_cheri)
         depc_cap <= cheri_csr_wcap_i;
     end
@@ -1960,6 +1959,22 @@ module ibex_cs_registers import cheri_pkg::*;  #(
 
     end
 
+    // fatal error condition (unrecoverable, need external reset)
+    // exception with invalid mepcc
+    logic cheri_fatal_err_q;
+
+    assign cheri_fatal_err_o = cheri_fatal_err_q;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        cheri_fatal_err_q <= 1'b0;
+      end else begin
+        if (cheri_pmode_i & csr_save_cause_i & ~mtvec_cap.valid) 
+          cheri_fatal_err_q <= 1'b1;
+      end
+    end
+
+
   end else begin: gen_no_scr
     
     assign cheri_csr_rdata_o = 32'h0;
@@ -1973,9 +1988,9 @@ module ibex_cs_registers import cheri_pkg::*;  #(
     assign depc_en_cheri       = 1'b0;
     assign dscratch0_en_cheri  = 1'b0;
     assign dscratch1_en_cheri  = 1'b0;
+ 
+    assign cheri_fatal_err_o   = 1'b0;
 
   end
 
 endmodule
-
-/* verilator lint_on UNUSED */

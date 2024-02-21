@@ -14,8 +14,6 @@
 `include "prim_assert.sv"
 `include "dv_fcov_macros.svh"
 
-/* verilator lint_off UNUSED */
-
 module ibex_controller #(
   parameter bit CHERIoTEn       = 1'b1,
   parameter bit WritebackStage  = 0,
@@ -44,6 +42,9 @@ module ibex_controller #(
   input  logic                  instr_bp_taken_i,        // instr was predicted taken branch
   input  logic                  instr_fetch_err_i,       // instr has error
   input  logic                  instr_fetch_err_plus2_i, // instr error is x32
+  input  logic                  instr_fetch_cheri_acc_vio_i,         
+  input  logic                  instr_fetch_cheri_bound_vio_i,         
+
   input  logic [31:0]           pc_id_i,                 // instr address
 
   // to IF-ID pipeline stage
@@ -101,6 +102,8 @@ module ibex_controller #(
   output logic                  csr_restore_mret_id_o,
   output logic                  csr_restore_dret_id_o,
   output logic                  csr_save_cause_o,
+  output logic                  csr_mepcc_clrtag_o,
+
   output logic [31:0]           csr_mtval_o,
   input  ibex_pkg::priv_lvl_e   priv_mode_i,
   input  logic                  csr_mstatus_tw_i,
@@ -421,6 +424,7 @@ module ibex_controller #(
     csr_restore_mret_id_o = 1'b0;
     csr_restore_dret_id_o = 1'b0;
     csr_save_cause_o      = 1'b0;
+    csr_mepcc_clrtag_o    = 1'b0;
     csr_mtval_o           = '0;
 
     // The values of pc_mux and exc_pc_mux are only relevant if pc_set is set. Some of the states
@@ -716,8 +720,17 @@ module ibex_controller #(
           // Exception/fault prioritisation logic will have set exactly 1 X_prio signal
           unique case (1'b1)
             instr_fetch_err_prio: begin
-              exc_cause_o = EXC_CAUSE_INSTR_ACCESS_FAULT;
-              csr_mtval_o = instr_fetch_err_plus2_i ? (pc_id_i + 32'd2) : pc_id_i;
+              if (instr_fetch_cheri_acc_vio_i) begin  // tag violation
+                exc_cause_o = EXC_CAUSE_CHERI_FAULT;
+                csr_mtval_o = {21'h0, 1'b1, 5'h0, 5'h2};   // s=1, cap_idx=0
+                csr_mepcc_clrtag_o = 1'b1;
+              end else if (instr_fetch_cheri_bound_vio_i) begin  // bound violation
+                exc_cause_o = EXC_CAUSE_CHERI_FAULT;
+                csr_mtval_o = {21'h0, 1'b1, 5'h0, 5'h1};   // s=1, cap_idx=0
+              end else begin                            // ext memory error
+                exc_cause_o = EXC_CAUSE_INSTR_ACCESS_FAULT;
+                csr_mtval_o = instr_fetch_err_plus2_i ? (pc_id_i + 32'd2) : pc_id_i;
+              end
             end
             illegal_insn_prio: begin
               exc_cause_o = EXC_CAUSE_ILLEGAL_INSN;
@@ -767,7 +780,7 @@ module ibex_controller #(
                   csr_mtval_o = lsu_addr_last_i;
                 end else begin
                   exc_cause_o = EXC_CAUSE_CHERI_FAULT; 
-                  csr_mtval_o = {21'h0, cheri_wb_err_info_i[10:0]};
+                  csr_mtval_o = cheri_wb_err_info_i[10:0];
                 end
               end else begin
                 exc_cause_o = EXC_CAUSE_STORE_ACCESS_FAULT;
@@ -781,7 +794,7 @@ module ibex_controller #(
                   csr_mtval_o = lsu_addr_last_i;
                 end else begin
                   exc_cause_o = EXC_CAUSE_CHERI_FAULT;
-                  csr_mtval_o = {21'h0, cheri_wb_err_info_i[10:0]};
+                  csr_mtval_o = cheri_wb_err_info_i[10:0];
                 end
               end else begin
                 exc_cause_o = EXC_CAUSE_LOAD_ACCESS_FAULT;
@@ -791,13 +804,13 @@ module ibex_controller #(
             cheri_ex_err_prio: begin
               if (cheri_pmode_i) begin
                 exc_cause_o = EXC_CAUSE_CHERI_FAULT;
-                csr_mtval_o = {21'h0, cheri_ex_err_info_i[10:0]};
+                csr_mtval_o = cheri_ex_err_info_i[10:0];        
               end
             end
             cheri_wb_err_prio: begin
               if (cheri_pmode_i) begin
                 exc_cause_o = EXC_CAUSE_CHERI_FAULT;
-                csr_mtval_o = {21'h0, cheri_wb_err_info_i[10:0]};
+                csr_mtval_o = cheri_wb_err_info_i[10:0];
               end
             end
 
@@ -1010,5 +1023,3 @@ module ibex_controller #(
   `endif
 
 endmodule
-
-/* verilator lint_on UNUSED */

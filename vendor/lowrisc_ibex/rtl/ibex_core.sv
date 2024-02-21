@@ -115,6 +115,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   input  logic [31:0]                  tsmap_rdata_i,
   input  logic [MMRegDinW-1:0]         mmreg_corein_i,
   output logic [MMRegDoutW-1:0]        mmreg_coreout_o,
+  output logic                         cheri_fatal_err_o,
 
   // RAMs interface
   output logic [IC_NUM_WAYS-1:0]       ic_tag_req_o,
@@ -197,6 +198,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   // IF/ID signals
   logic        dummy_instr_id;
   logic        instr_valid_id;
+  logic        instr_executing_id;
   logic        instr_new_id;
   logic [31:0] instr_rdata_id;                 // Instruction sampled inside IF stage
   logic [31:0] instr_rdata_alu_id;             // Instruction sampled inside IF stage (replicated to
@@ -207,7 +209,10 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   logic        instr_bp_taken_id;
   logic        instr_fetch_err;                // Bus error on instr fetch
   logic        instr_fetch_err_plus2;          // Instruction error is misaligned
+  logic        instr_fetch_cheri_acc_vio;         
+  logic        instr_fetch_cheri_bound_vio;         
   logic        illegal_c_insn_id;              // Illegal compressed instruction sent to ID stage
+
   logic [31:0] pc_if;                          // Program counter in IF stage
   logic [31:0] pc_id;                          // Program counter in ID stage
   logic [31:0] pc_wb;                          // Program counter in WB stage
@@ -253,6 +258,8 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   logic        ctrl_busy;
   logic        if_busy;
   logic        lsu_busy;
+
+  logic        lsu_busy_tbre;
 
   // Register File
   logic [4:0]  rf_raddr_a;
@@ -364,6 +371,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   logic        csr_restore_mret_id;
   logic        csr_restore_dret_id;
   logic        csr_save_cause;
+  logic        csr_mepcc_clrtag;
   logic        csr_mtvec_init;
   logic [31:0] csr_mtvec;
   logic [31:0] csr_mtval;
@@ -424,12 +432,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   logic [11:0]   cheri_ex_err_info;
   logic          cheri_wb_err;
   logic [11:0]   cheri_wb_err_info;
-
-  /* verilator lint_off UNOPTFLAT */
-  /* verilator lint_off IMPERFECTSCH */
   logic [OPDW-1:0] cheri_operator;
-  /* verilator lint_on UNOPTFLAT */
-  /* verilator lint_on IMPERFECTSCH */
 
   logic          rv32_lsu_req;
   logic          rv32_lsu_we;
@@ -438,6 +441,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   logic          rv32_lsu_sign_ext;
   logic          rv32_lsu_addr_incr_req;
   logic [31:0]   rv32_lsu_addr_last;
+  logic          rv32_lsu_resp_valid;
 
   logic          cheri_csr_access;
   logic [4:0]    cheri_csr_addr;
@@ -476,6 +480,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
   logic          lsu_resp_is_wr;
   logic [32:0]   lsu_tbre_raw_lsw;   
   logic          lsu_tbre_req_done;   
+  logic          lsu_tbre_addr_incr;
   logic          tbre_lsu_req;
   logic          tbre_lsu_is_cap;
   logic          tbre_lsu_we;
@@ -556,6 +561,9 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
     .instr_bp_taken_o        (instr_bp_taken_id),
     .instr_fetch_err_o       (instr_fetch_err),
     .instr_fetch_err_plus2_o (instr_fetch_err_plus2),
+    .instr_fetch_cheri_acc_vio_o   (instr_fetch_cheri_acc_vio),       
+    .instr_fetch_cheri_bound_vio_o (instr_fetch_cheri_bound_vio),       
+
     .illegal_c_insn_id_o     (illegal_c_insn_id),
     .dummy_instr_id_o        (dummy_instr_id),
     .pc_if_o                 (pc_if),
@@ -671,6 +679,9 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
 
     .instr_fetch_err_i      (instr_fetch_err),
     .instr_fetch_err_plus2_i(instr_fetch_err_plus2),
+    .instr_fetch_cheri_acc_vio_i  (instr_fetch_cheri_acc_vio),       
+    .instr_fetch_cheri_bound_vio_i (instr_fetch_cheri_bound_vio),       
+
     .illegal_c_insn_i       (illegal_c_insn_id),
 
     .pc_id_i(pc_id),
@@ -710,6 +721,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
     .csr_restore_mret_id_o(csr_restore_mret_id),  // restore mstatus upon MRET
     .csr_restore_dret_id_o(csr_restore_dret_id),  // restore mstatus upon MRET
     .csr_save_cause_o     (csr_save_cause),
+    .csr_mepcc_clrtag_o   (csr_mepcc_clrtag),
     .csr_mtval_o          (csr_mtval),
     .priv_mode_i          (priv_mode_id),
     .csr_mstatus_tw_i     (csr_mstatus_tw),
@@ -1088,7 +1100,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
     .lsu_tbre_resp_is_wr_i   (lsu_resp_is_wr),
     .lsu_tbre_raw_lsw_i      (lsu_tbre_raw_lsw),   
     .lsu_tbre_req_done_i     (lsu_tbre_req_done),   
-    .lsu_tbre_addr_incr_i    (lsu_addr_incr_req),
+    .lsu_tbre_addr_incr_i    (lsu_tbre_addr_incr),
     .lsu_tbre_sel_i          (lsu_tbre_sel),
     .tbre_lsu_req_o          (tbre_lsu_req),
     .tbre_lsu_is_cap_o       (tbre_lsu_is_cap),
@@ -1171,7 +1183,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
     .lsu_cheri_err_i  (lsu_cheri_err),
     .lsu_addr_i       (lsu_addr),
 
-    .addr_incr_req_o(lsu_addr_incr_req),
+    .lsu_addr_incr_req_o(lsu_addr_incr_req),
     .addr_last_o    (lsu_addr_last),
 
     .lsu_req_done_o      (lsu_req_done),
@@ -1187,6 +1199,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
     .lsu_tbre_req_done_o   (lsu_tbre_req_done),
     .lsu_tbre_resp_valid_o (lsu_tbre_resp_valid),
     .lsu_tbre_resp_err_o   (lsu_tbre_resp_err),
+    .lsu_tbre_addr_incr_req_o(lsu_tbre_addr_incr),
 
     // exception signals
     .load_err_o (lsu_load_err),
@@ -1196,7 +1209,7 @@ module ibex_core import ibex_pkg::*; import cheri_pkg::*; #(
 
     .busy_o(lsu_busy),
 
-    .busy_tbre_o(),
+    .busy_tbre_o(lsu_busy_tbre),
 
     .perf_load_o (perf_load),
     .perf_store_o(perf_store)
@@ -1525,6 +1538,7 @@ end
     .csr_restore_mret_i(csr_restore_mret_id),
     .csr_restore_dret_i(csr_restore_dret_id),
     .csr_save_cause_i  (csr_save_cause),
+    .csr_mepcc_clrtag_i   (csr_mepcc_clrtag),
     .csr_mcause_i      (exc_cause),
     .csr_mtval_i       (csr_mtval),
     .illegal_csr_insn_o(illegal_csr_insn_id),
@@ -1550,7 +1564,8 @@ end
     .cheri_branch_target_i  (branch_target_ex_cheri),
     .pcc_cap_i              (pcc_cap_w),
     .pcc_cap_o              (pcc_cap_r),
-    .csr_dbg_tclr_fault_o   (csr_dbg_tclr_fault)
+    .csr_dbg_tclr_fault_o   (csr_dbg_tclr_fault),
+    .cheri_fatal_err_o      (cheri_fatal_err_o)
   );
 
 
