@@ -65,7 +65,7 @@ module cheri_trvk_stage #(
   /* verilator lint_on WIDTH */
 
   // not a sealling cap and pointing to valid TSMAP range
-  assign range_ok      = (int'(tsmap_ptr[31:5]) <= TSMapSize) &&
+  assign range_ok      = (u_int_t'(tsmap_ptr[31:5]) <= TSMapSize) &&
                          ~((in_cap_q.cperms[4:3]==2'b00) && (|in_cap_q.cperms[2:0]));
   assign tsmap_cs_o    = (cpu_op_valid_q[0] | tbre_op_valid_q[0]) & cap_good_q[0];
 
