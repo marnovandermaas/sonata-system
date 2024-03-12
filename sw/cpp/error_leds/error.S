@@ -15,8 +15,9 @@ start:
 	csetaddr cra, cra, t0
 	cspecialw mtcc, cra
 
-	// cause a trap
-	ecall
+	// cause an out of bounds exception
+	csetboundsimm cra, cra, 4
+	clw t0, 5(cra) // 5 is beyond the bound of 4
 	j endloop
 
 .section .trap, "ax", @progbits
