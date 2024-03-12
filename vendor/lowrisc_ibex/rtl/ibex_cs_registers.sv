@@ -1012,23 +1012,23 @@ module ibex_cs_registers import cheri_pkg::*;  #(
 
   logic  cheri_exception_code = mcause_q == 6'h1C;
   // Bounds violation
-  assign cheri_err_o[0] = cheri_exception_code ? (mtval_q == 32'h01) : 1'b0;
+  assign cheri_err_o[0] = cheri_exception_code ? (mtval_q[4:0] == 5'h01) : 1'b0;
   // Tag violation
-  assign cheri_err_o[1] = cheri_exception_code ? (mtval_q == 32'h02) : 1'b0;
+  assign cheri_err_o[1] = cheri_exception_code ? (mtval_q[4:0] == 5'h02) : 1'b0;
   // Seal violation
-  assign cheri_err_o[2] = cheri_exception_code ? (mtval_q == 32'h03) : 1'b0;
+  assign cheri_err_o[2] = cheri_exception_code ? (mtval_q[4:0] == 5'h03) : 1'b0;
   // Permit execute violation
-  assign cheri_err_o[3] = cheri_exception_code ? (mtval_q == 32'h11) : 1'b0;
+  assign cheri_err_o[3] = cheri_exception_code ? (mtval_q[4:0] == 5'h11) : 1'b0;
   // Permit load violation
-  assign cheri_err_o[4] = cheri_exception_code ? (mtval_q == 32'h12) : 1'b0;
+  assign cheri_err_o[4] = cheri_exception_code ? (mtval_q[4:0] == 5'h12) : 1'b0;
   // Permit store violation
-  assign cheri_err_o[5] = cheri_exception_code ? (mtval_q == 32'h13) : 1'b0;
+  assign cheri_err_o[5] = cheri_exception_code ? (mtval_q[4:0] == 5'h13) : 1'b0;
   // Permit store capability violation
-  assign cheri_err_o[6] = cheri_exception_code ? (mtval_q == 32'h15) : 1'b0;
+  assign cheri_err_o[6] = cheri_exception_code ? (mtval_q[4:0] == 5'h15) : 1'b0;
   // Permit store local capability violation
-  assign cheri_err_o[7] = cheri_exception_code ? (mtval_q == 32'h16) : 1'b0;
+  assign cheri_err_o[7] = cheri_exception_code ? (mtval_q[4:0] == 5'h16) : 1'b0;
   // Permit access system registers violation
-  assign cheri_err_o[8] = cheri_exception_code ? (mtval_q == 32'h18) : 1'b0;
+  assign cheri_err_o[8] = cheri_exception_code ? (mtval_q[4:0] == 5'h18) : 1'b0;
 
   assign mtvec_en_combi = mtvec_en | mtvec_en_cheri;
 
