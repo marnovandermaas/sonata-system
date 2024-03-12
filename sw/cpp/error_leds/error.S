@@ -34,18 +34,18 @@ checkvalues:
 	addi t0, t0, 1
 	beq s0, t0, seal
 	addi t0, t0, 1
-	beq s0, t0, permitexecute
+	//beq s0, t0, permitexecute
 	addi t0, t0, 1
 	beq s0, t0, permitload
 	addi t0, t0, 1
 	beq s0, t0, permitstore
 	addi t0, t0, 1
-	beq s0, t0, permitstorecap
+	//beq s0, t0, permitstorecap
 	addi t0, t0, 1
-	beq s0, t0, permitstoreloccap
+	//beq s0, t0, permitstoreloccap
 	addi t0, t0, 1
-	beq s0, t0, permitaccsysreg
-	j fail
+	//beq s0, t0, permitaccsysreg
+	j nextviolation
 
 bounds:
 	// Cause an out of bounds violation
@@ -68,15 +68,26 @@ seal:
 	j fail
 
 permitexecute:
+	// Jumping to the memory root causes execute permission violation.
+	cjalr ca0
 	j fail
 
 permitload:
+	// Loading from the seal root causes load permission violation.
+	clw t0, 0(ca2)
 	j fail
 
 permitstore:
+	// Storing to execute root causes store permission violation.
+	csw t0, 0(ca1)
 	j fail
 
 permitstorecap:
+	// Create data capability with store data permission set.
+	li t0, 4
+	candperm ct0, ca0, t0
+	// Cause store capability permission violation.
+	csc cnull, 0(ct0)
 	j fail
 
 permitstoreloccap:
@@ -95,11 +106,12 @@ compartment_key:
 .section .trap, "ax", @progbits
 .p2align 2
 trap:
-	li t0, 0x10 //0x10 for simulation 0x01000000 for FPGA
+	li t0, 0x01000000 //0x10 for simulation 0x01000000 for FPGA
 delayloop:
 	addi t0, t0, -1
 	bnez t0, delayloop
 	csrw mtval, 0
+	csrw mcause, 0
 	j nextviolation
 
 fail:
