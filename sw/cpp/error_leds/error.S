@@ -17,9 +17,12 @@ start:
 	la_abs t0, trap
 	csetaddr ct0, ca1, t0
 	cspecialw mtcc, ct0
-
+	// Enable trap on permit store local capability violation.
+	li t0, 1
+	csrw 0xBC4, t0
 	// Keeps track of which violation to cause next.
 	li s0, 8
+
 
 nextviolation:
 	addi s0, s0, 1
@@ -40,11 +43,11 @@ checkvalues:
 	addi t0, t0, 1
 	beq s0, t0, permitstore
 	addi t0, t0, 1
-	//beq s0, t0, permitstorecap
+	beq s0, t0, permitstorecap
 	addi t0, t0, 1
-	//beq s0, t0, permitstoreloccap
+	beq s0, t0, permitstoreloccap
 	addi t0, t0, 1
-	//beq s0, t0, permitaccsysreg
+	beq s0, t0, permitaccsysreg
 	j nextviolation
 
 bounds:
@@ -87,13 +90,28 @@ permitstorecap:
 	li t0, 4
 	candperm ct0, ca0, t0
 	// Cause store capability permission violation.
-	csc cnull, 0(ct0)
+	csc ct0, 0(ct0)
 	j fail
 
 permitstoreloccap:
+	// Create capability write only capability that is local.
+	li t0, 0x44
+	candperm ct0, ca0, t0
+	// Cause store local capability permission violation.
+	csc ct0, 0(ct0)
 	j fail
 
 permitaccsysreg:
+	// Remove access system register permission from PCC.
+	// And permissions: GL, LM, LG, EX, LD, MC
+	li t0, 0x16B
+	candperm ct0, ca1, t0
+	la_abs t1, accesssystemregister
+	csetaddr ct0, ct0, t1
+	cjalr ct0
+accesssystemregister:
+	// Accessing a special capability register should trigger the exception.
+	cspecialr ct0, mscratchc
 	j fail
 
 .section .text, "ax", @progbits
