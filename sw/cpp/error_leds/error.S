@@ -37,7 +37,7 @@ checkvalues:
 	addi t0, t0, 1
 	beq s0, t0, seal
 	addi t0, t0, 1
-	//beq s0, t0, permitexecute
+	beq s0, t0, permitexecute
 	addi t0, t0, 1
 	beq s0, t0, permitload
 	addi t0, t0, 1
@@ -48,7 +48,7 @@ checkvalues:
 	beq s0, t0, permitstoreloccap
 	addi t0, t0, 1
 	beq s0, t0, permitaccsysreg
-	j nextviolation
+	j fail
 
 bounds:
 	// Cause an out of bounds violation
