@@ -53,7 +53,7 @@ checkvalues:
 bounds:
 	// Cause an out of bounds violation
 	csetboundsimm ct0, ca0, 4
-	clw t0, 5(ct0) // 5 is beyond the bound of 4
+	clb t0, 5(ct0) // 5 is beyond the bound of 4
 	j fail
 
 tag:
