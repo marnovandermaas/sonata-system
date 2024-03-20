@@ -71,8 +71,11 @@ seal:
 	j fail
 
 permitexecute:
-	// Jumping to the memory root causes execute permission violation.
-	cjalr ca0
+	// Load the program counter, remove execute permission and try to jumpt to it.
+	auipcc ct0, 0
+	li t1, 0
+	candperm ct0, ct0, t1
+	cjalr ct0
 	j fail
 
 permitload:
