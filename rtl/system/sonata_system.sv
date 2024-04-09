@@ -352,10 +352,10 @@ module sonata_system #(
     .clk_i  (clk_sys_i),
     .rst_ni (rst_sys_ni),
 
-    .tl_a_i (tl_sram_h2d_q),
-    .tl_a_o (tl_sram_d2h_q),
-    .tl_b_i (tl_ibex_ins_h2d),
-    .tl_b_o (tl_ibex_ins_d2h)
+    .tl_a_i (tl_sram_dat_h2d_q),
+    .tl_a_o (tl_sram_dat_d2h_q),
+    .tl_b_i (tl_sram_ins_h2d),
+    .tl_b_o (tl_sram_ins_d2h)
   );
 
   tlul_adapter_reg #(

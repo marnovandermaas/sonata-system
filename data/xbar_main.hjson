@@ -27,7 +27,7 @@
       xbar:  false,
       pipeline: false,
     },
-    { name:  "sram", // Internal memory
+    { name:  "sram_dat", // Internal memory data port
       type:  "device",
       clock: "clk_sys_i",
       reset: "rst_sys_ni",
@@ -89,7 +89,7 @@
     },
   ],
   connections: {
-    ibex_lsu: ["sram", "gpio", "uart", "timer", "pwm", "spi"],
-    dbg_host: ["sram"],
+    ibex_lsu: ["sram_dat", "gpio", "uart", "timer", "pwm", "spi"],
+    dbg_host: ["sram_dat"],
   },
 }

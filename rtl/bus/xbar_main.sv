@@ -9,7 +9,7 @@
 // ibex_lsu
 //   -> s1n_8
 //     -> sm1_9
-//       -> sram
+//       -> sram_dat
 //     -> gpio
 //     -> uart
 //     -> timer
@@ -17,7 +17,7 @@
 //     -> spi
 // dbg_host
 //   -> sm1_9
-//     -> sram
+//     -> sram_dat
 
 module xbar_main (
   input clk_sys_i,
@@ -30,8 +30,8 @@ module xbar_main (
   output tlul_pkg::tl_d2h_t tl_dbg_host_o,
 
   // Device interfaces
-  output tlul_pkg::tl_h2d_t tl_sram_o,
-  input  tlul_pkg::tl_d2h_t tl_sram_i,
+  output tlul_pkg::tl_h2d_t tl_sram_dat_o,
+  input  tlul_pkg::tl_d2h_t tl_sram_dat_i,
   output tlul_pkg::tl_h2d_t tl_gpio_o,
   input  tlul_pkg::tl_d2h_t tl_gpio_i,
   output tlul_pkg::tl_h2d_t tl_pwm_o,
@@ -97,14 +97,14 @@ module xbar_main (
   assign tl_s1n_8_us_h2d = tl_ibex_lsu_i;
   assign tl_ibex_lsu_o = tl_s1n_8_us_d2h;
 
-  assign tl_sram_o = tl_sm1_9_ds_h2d;
-  assign tl_sm1_9_ds_d2h = tl_sram_i;
+  assign tl_sram_dat_o = tl_sm1_9_ds_h2d;
+  assign tl_sm1_9_ds_d2h = tl_sram_dat_i;
 
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_8 = 3'd6;
     if ((tl_s1n_8_us_h2d.a_address &
-         ~(ADDR_MASK_SRAM)) == ADDR_SPACE_SRAM) begin
+         ~(ADDR_MASK_SRAM_DAT)) == ADDR_SPACE_SRAM_DAT) begin
       dev_sel_s1n_8 = 3'd0;
 
     end else if ((tl_s1n_8_us_h2d.a_address &
