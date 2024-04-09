@@ -46,16 +46,16 @@ module sonata_system #(
 
   localparam int unsigned MemSize       = 128 * 1024; // 128 KiB
   localparam int unsigned SRAMAddrWidth = $clog2(MemSize);
-  localparam int unsigned DebugStart    = 32'h1a110000;
   localparam int unsigned PwmCtrSize    = 8;
   localparam int unsigned BusAddrWidth  = 32;
   localparam int unsigned BusByteEnable = 4;
   localparam int unsigned BusDataWidth  = 32;
   localparam int unsigned RegAddrWidth  = 8;
 
-  // Debug functionality is disabled.
-  localparam int unsigned DbgHwBreakNum = 0;
-  localparam bit          DbgTriggerEn  = 1'b0;
+  // Debug configuration.
+  localparam int unsigned DbgHwBreakNum   = 2;
+  localparam bit          DbgTriggerEn    = 1'b1;
+  localparam int unsigned DbgRegAddrWidth = 16;
 
   typedef enum int {
     CoreD,
@@ -109,12 +109,22 @@ module sonata_system #(
   logic [BusDataWidth-1:0]  device_rdata [NrDevices];
   logic                     device_err   [NrDevices];
 
+  // Bus signals for debug device.
+  logic                     dbg_dev_req;
+  logic [BusAddrWidth-1:0]  dbg_dev_addr;
+  logic                     dbg_dev_re;
+  logic                     dbg_dev_we;
+  logic [BusByteEnable-1:0] dbg_dev_be;
+  logic [BusDataWidth-1:0]  dbg_dev_wdata;
+  logic [BusDataWidth-1:0]  dbg_dev_rdata;
+
   // Generate requests from read and write enables.
   assign device_req[Gpio]  = device_re[Gpio]  | device_we[Gpio];
   assign device_req[Pwm]   = device_re[Pwm]   | device_we[Pwm];
   assign device_req[Uart]  = device_re[Uart]  | device_we[Uart];
   assign device_req[Timer] = device_re[Timer] | device_we[Timer];
   assign device_req[Spi]   = device_re[Spi]   | device_we[Spi];
+  assign dbg_dev_req       = dbg_dev_re       | dbg_dev_we;
 
   // Instruction fetch signals.
   logic                    core_instr_req;
@@ -126,7 +136,8 @@ module sonata_system #(
   logic                    core_instr_err;
 
   assign core_instr_req_filtered =
-      core_instr_req & ((core_instr_addr & ~(tl_main_pkg::ADDR_MASK_SRAM)) == tl_main_pkg::ADDR_SPACE_SRAM);
+      (core_instr_req & ((core_instr_addr & ~(tl_ins_pkg::ADDR_MASK_SRAM_INS)) == tl_ins_pkg::ADDR_SPACE_SRAM_INS)) |
+      (core_instr_req & ((core_instr_addr & ~(tl_ins_pkg::ADDR_MASK_DBG_DEV)) == tl_ins_pkg::ADDR_SPACE_DBG_DEV));
 
   // Reset signals
   // Internally generated resets cause IMPERFECTSCH warnings
@@ -163,10 +174,12 @@ module sonata_system #(
   tlul_pkg::tl_d2h_t tl_dbg_host_d2h_q;
 
   // Device interfaces.
-  tlul_pkg::tl_h2d_t tl_sram_h2d_d;
-  tlul_pkg::tl_d2h_t tl_sram_d2h_d;
-  tlul_pkg::tl_h2d_t tl_sram_h2d_q;
-  tlul_pkg::tl_d2h_t tl_sram_d2h_q;
+  tlul_pkg::tl_h2d_t tl_sram_dat_h2d_d;
+  tlul_pkg::tl_d2h_t tl_sram_dat_d2h_d;
+  tlul_pkg::tl_h2d_t tl_sram_dat_h2d_q;
+  tlul_pkg::tl_d2h_t tl_sram_dat_d2h_q;
+  tlul_pkg::tl_h2d_t tl_sram_ins_h2d;
+  tlul_pkg::tl_d2h_t tl_sram_ins_d2h;
   tlul_pkg::tl_h2d_t tl_gpio_h2d;
   tlul_pkg::tl_d2h_t tl_gpio_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
@@ -177,8 +190,11 @@ module sonata_system #(
   tlul_pkg::tl_d2h_t tl_pwm_d2h;
   tlul_pkg::tl_h2d_t tl_spi_h2d;
   tlul_pkg::tl_d2h_t tl_spi_d2h;
+  tlul_pkg::tl_h2d_t tl_dbg_dev_h2d;
+  tlul_pkg::tl_d2h_t tl_dbg_dev_d2h;
 
-  xbar_main xbar (
+  // Main data crossbar.
+  xbar_main u_xbar_main (
     .clk_sys_i (clk_sys_i),
     .rst_sys_ni(rst_sys_ni),
 
@@ -189,18 +205,36 @@ module sonata_system #(
     .tl_dbg_host_o(tl_dbg_host_d2h_q),
 
     // Device interfaces.
-    .tl_sram_o (tl_sram_h2d_d),
-    .tl_sram_i (tl_sram_d2h_d),
-    .tl_gpio_o (tl_gpio_h2d),
-    .tl_gpio_i (tl_gpio_d2h),
-    .tl_uart_o (tl_uart_h2d),
-    .tl_uart_i (tl_uart_d2h),
-    .tl_timer_o(tl_timer_h2d),
-    .tl_timer_i(tl_timer_d2h),
-    .tl_pwm_o  (tl_pwm_h2d),
-    .tl_pwm_i  (tl_pwm_d2h),
-    .tl_spi_o  (tl_spi_h2d),
-    .tl_spi_i  (tl_spi_d2h),
+    .tl_sram_dat_o(tl_sram_dat_h2d_d),
+    .tl_sram_dat_i(tl_sram_dat_d2h_d),
+    .tl_gpio_o    (tl_gpio_h2d),
+    .tl_gpio_i    (tl_gpio_d2h),
+    .tl_uart_o    (tl_uart_h2d),
+    .tl_uart_i    (tl_uart_d2h),
+    .tl_timer_o   (tl_timer_h2d),
+    .tl_timer_i   (tl_timer_d2h),
+    .tl_pwm_o     (tl_pwm_h2d),
+    .tl_pwm_i     (tl_pwm_d2h),
+    .tl_spi_o     (tl_spi_h2d),
+    .tl_spi_i     (tl_spi_d2h),
+
+    .scanmode_i(prim_mubi_pkg::MuBi4False)
+  );
+
+  // Crossbar for instruction fetch.
+  xbar_ins u_xbar_ins (
+    .clk_sys_i (clk_sys_i),
+    .rst_sys_ni(rst_sys_ni),
+
+    // Host interfaces.
+    .tl_ibex_ins_i(tl_ibex_ins_h2d),
+    .tl_ibex_ins_o(tl_ibex_ins_d2h),
+
+    // Device interfaces.
+    .tl_sram_ins_o(tl_sram_ins_h2d),
+    .tl_sram_ins_i(tl_sram_ins_d2h),
+    .tl_dbg_dev_o (tl_dbg_dev_h2d),
+    .tl_dbg_dev_i (tl_dbg_dev_d2h),
 
     .scanmode_i(prim_mubi_pkg::MuBi4False)
   );
@@ -334,10 +368,10 @@ module sonata_system #(
     .clk_i (clk_sys_i),
     .rst_ni(rst_sys_ni),
 
-    .tl_h_i(tl_sram_h2d_d),
-    .tl_h_o(tl_sram_d2h_d),
-    .tl_d_o(tl_sram_h2d_q),
-    .tl_d_i(tl_sram_d2h_q),
+    .tl_h_i(tl_sram_dat_h2d_d),
+    .tl_h_o(tl_sram_dat_d2h_d),
+    .tl_d_o(tl_sram_dat_h2d_q),
+    .tl_d_i(tl_sram_dat_d2h_q),
 
     .spare_req_i(1'b0),
     .spare_req_o(),
@@ -477,6 +511,36 @@ module sonata_system #(
   // Tie off upper bits of address.
   assign device_addr[Spi][BusAddrWidth-1:RegAddrWidth] = '0;
 
+  tlul_adapter_reg #(
+    .EnableRspIntgGen ( 1               ),
+    .AccessLatency    ( 1               ),
+    .RegAw            ( DbgRegAddrWidth )
+  ) u_debug_device_adapter (
+    .clk_i (clk_sys_i),
+    .rst_ni(rst_sys_ni),
+
+    // TL-UL interface.
+    .tl_i(tl_dbg_dev_h2d),
+    .tl_o(tl_dbg_dev_d2h),
+
+    // Control interface.
+    .en_ifetch_i (prim_mubi_pkg::MuBi4False),
+    .intg_error_o(),
+
+    // Register interface.
+    .re_o   (dbg_dev_re),
+    .we_o   (dbg_dev_we),
+    .addr_o (dbg_dev_addr[DbgRegAddrWidth-1:0]),
+    .wdata_o(dbg_dev_wdata),
+    .be_o   (dbg_dev_be),
+    .busy_i ('0),
+    .rdata_i(dbg_dev_rdata),
+    .error_i('0)
+  );
+
+  // Tie off upper bits of address.
+  assign dbg_dev_addr[BusAddrWidth-1:DbgRegAddrWidth] = '0;
+
   ///////////////////////////////////////////////
   // Core and hardware IP block instantiation. //
   ///////////////////////////////////////////////
@@ -488,12 +552,12 @@ module sonata_system #(
   assign rst_core_n = rst_sys_ni & ~ndmreset_req;
 
   ibexc_top_tracing #(
-    .DmHaltAddr      ( DebugStart + dm::HaltAddress[31:0]      ),
-    .DmExceptionAddr ( DebugStart + dm::ExceptionAddress[31:0] ),
-    .DbgTriggerEn    ( DbgTriggerEn                            ),
-    .DbgHwBreakNum   ( DbgHwBreakNum                           ),
-    .MHPMCounterNum  ( 13                                      ),
-    .RV32B           ( ibex_pkg::RV32BFull                     )
+    .DmHaltAddr      ( tl_ins_pkg::ADDR_SPACE_DBG_DEV + dm::HaltAddress[31:0]      ),
+    .DmExceptionAddr ( tl_ins_pkg::ADDR_SPACE_DBG_DEV + dm::ExceptionAddress[31:0] ),
+    .DbgTriggerEn    ( DbgTriggerEn                                                ),
+    .DbgHwBreakNum   ( DbgHwBreakNum                                               ),
+    .MHPMCounterNum  ( 13                                                          ),
+    .RV32B           ( ibex_pkg::RV32BFull                                         )
   ) u_top_tracing (
     .clk_i (clk_sys_i),
     .rst_ni(rst_core_n),
@@ -676,13 +740,13 @@ module sonata_system #(
     .debug_req_o  (dm_debug_req),
     .unavailable_i(1'b0),
 
-    // TODO: Bus device with debug memory (for execution-based debug).
-    .device_req_i  (0),
-    .device_we_i   (0),
-    .device_addr_i (0),
-    .device_be_i   (0),
-    .device_wdata_i(0),
-    .device_rdata_o(),
+    // Bus device with debug memory (for execution-based debug).
+    .device_req_i  (dbg_dev_req),
+    .device_we_i   (dbg_dev_we),
+    .device_addr_i (dbg_dev_addr),
+    .device_be_i   (dbg_dev_be),
+    .device_wdata_i(dbg_dev_wdata),
+    .device_rdata_o(dbg_dev_rdata),
 
     // Bus host (for system bus accesses, SBA).
     .host_req_o    (host_req[DbgHost]),

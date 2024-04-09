@@ -10,6 +10,7 @@ filesets:
       - lowrisc:ibex:ibex_top_tracing
       - pulp:riscv:debug_module
       - lowrisc:ip:xbar_main
+      - lowrisc:ip:xbar_ins
       - lowrisc:ip:uart
       - lowrisc:tlul:adapter_host
       - lowrisc:tlul:adapter_reg
