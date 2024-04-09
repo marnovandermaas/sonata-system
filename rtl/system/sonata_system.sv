@@ -135,6 +135,9 @@ module sonata_system #(
   logic ndmreset_req;
   /* verilator lint_on IMPERFECTSCH */
 
+  // Debug module signals.
+  logic dm_debug_req;
+
   // Tie-off unused error signals.
   assign device_err[Gpio] = 1'b0;
   assign device_err[Pwm]  = 1'b0;
@@ -549,7 +552,7 @@ module sonata_system #(
     .scramble_nonce_i    ('0),
     .scramble_req_o      (),
 
-    .debug_req_i        (),
+    .debug_req_i        (dm_debug_req),
     .crash_dump_o       (),
     .double_fault_seen_o(),
 
@@ -670,7 +673,7 @@ module sonata_system #(
     .testmode_i   (1'b0),
     .ndmreset_o   (ndmreset_req),
     .dmactive_o   (),
-    .debug_req_o  (), // TODO connect to debug_req_i
+    .debug_req_o  (dm_debug_req),
     .unavailable_i(1'b0),
 
     // TODO: Bus device with debug memory (for execution-based debug).
