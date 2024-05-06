@@ -19,3 +19,4 @@ set(CHERIOT_SDK_INCLUDES
 
 add_subdirectory(common)
 add_subdirectory(tests)
+add_subdirectory(error_leds)
