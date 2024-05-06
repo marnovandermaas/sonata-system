@@ -1,7 +1,8 @@
 target/
 
 # FuseSoc builds are placed in build
-build/
+# Software builds are placed build_cheri
+build*
 
 # Nix based builds a placed are symlinked to result
 result
