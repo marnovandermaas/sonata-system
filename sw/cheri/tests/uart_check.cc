@@ -9,7 +9,7 @@
 using namespace CHERI;
 
 #define GPIO_VALUE  (0xFFFFFFFF)
-#define CPU_FREQ_HZ (50'000'000)
+#define CPU_FREQ_HZ (25'000'000)
 #define BAUD_RATE   (   115'200)
 
 /**
@@ -75,10 +75,12 @@ extern "C" void rom_loader_entry(void *rwRoot)
   uart->init();
   uart->blocking_write('h');
   uart->blocking_write('i');
+  uart->blocking_write('\r');
   uart->blocking_write('\n');
   while (true) {
     uart->blocking_write('h');
     uart->blocking_write('i');
+    uart->blocking_write('\r');
     uart->blocking_write('\n');
   }
 }
