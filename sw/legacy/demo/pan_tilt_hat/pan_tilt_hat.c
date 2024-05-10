@@ -76,7 +76,7 @@ int servo_test(uint8_t* data) {
   i2c_set_speed(i2c, 100);
 
   data[0] = 0x00; // Config register
-  data[1] = 0x0B; // Enable servos but not lights
+  data[1] = 0x01; // Enable servo 1
 
   if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
     puts("Failed to set config register.");
@@ -92,6 +92,11 @@ int servo_test(uint8_t* data) {
     return -4;
   }
 
+  for (int i = 0; i < 0x300; i++) {
+    putchar('.');
+  }
+  puts("");
+
   data[0] = 0x01; // Servo 1 register
   data[1] = 0x00; // Least significant byte of microseconds
   data[2] = 0x04; // Most significant byte of microseconds
@@ -101,14 +106,32 @@ int servo_test(uint8_t* data) {
     return -5;
   }
 
+  for (int i = 0; i < 0x400; i++) {
+    putchar('.');
+  }
+  puts("");
+
+  data[0] = 0x00; // Config register
+  data[1] = 0x02; // Enable servo 2
+
+  if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
+    puts("Failed to set config register.");
+    return -6;
+  }
+
   data[0] = 0x03; // Servo 2 register
   data[1] = 0x00; // Least significant byte of microseconds
   data[2] = 0x03; // Most significant byte of microseconds
 
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to turn servo 2, first time.");
-    return -4;
+    return -7;
   }
+
+  for (int i = 0; i < 0x300; i++) {
+    putchar('.');
+  }
+  puts("");
 
   data[0] = 0x03; // Servo 2 register
   data[1] = 0x00; // Least significant byte of microseconds
@@ -116,7 +139,20 @@ int servo_test(uint8_t* data) {
 
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to turn servo 2, second time.");
-    return -5;
+    return -8;
+  }
+
+  for (int i = 0; i < 0x400; i++) {
+    putchar('.');
+  }
+  puts("");
+
+  data[0] = 0x00; // Config register
+  data[1] = 0x00; // Disable both servos
+
+  if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
+    puts("Failed to set config register.");
+    return -9;
   }
 
   return 0;
