@@ -6,12 +6,12 @@
  * when `impulse_i` is asserted. When `impulse_i` is dropped,
  * it will fade it's output by decreasing it's pulse width.
  *
- * Total fade time = (1 << CounterSize) * NumTicks * the clock period
+ * Total fade time = (1 << CounterSize)^2 * NumTicks * the clock period
  * The default fade time is 1.68 second, when the clock is 30MHz
  */
 module pwm_fade #(
   parameter CounterSize = 7,
-  parameter NumTicks = (1 << 18) - 1
+  parameter NumTicks = (1 << 12)
 )(
   input logic clk_i,
   input logic rst_ni,
@@ -21,11 +21,7 @@ module pwm_fade #(
 );
   localparam CounterMax = (1 << CounterSize) - 1;
 
-  if ($clog2(NumTicks) < CounterSize) begin : check_counter_width
-    $fatal("There are too few ticks, either lower the counter size or raise the number of ticks.");
-  end
-
-  logic [$clog2(NumTicks+1):0] tick_counter;
+  logic [$clog2(NumTicks+1)+CounterSize:0] tick_counter;
   logic [CounterSize-1:0] counter, pulse_width;
 
   // The bottom `CounterSize` bits of the tick_counter
@@ -42,7 +38,7 @@ module pwm_fade #(
       pulse_width <= CounterMax;
       tick_counter <= 0;
     end else if (pulse_width != 0) begin
-      if (tick_counter == NumTicks) begin
+      if (tick_counter == (NumTicks << CounterSize)) begin
         pulse_width <= pulse_width - 1;
         tick_counter <= 0;
       end else begin
