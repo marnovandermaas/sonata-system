@@ -192,7 +192,7 @@ module top_sonata (
 
   // Enable CHERI by default.
   logic enable_cheri;
-  assign enable_cheri = 1'b1;
+  assign enable_cheri = 1'b0;
 
   logic rgbled_dout;
 

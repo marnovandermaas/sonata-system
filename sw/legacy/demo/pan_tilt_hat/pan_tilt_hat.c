@@ -9,6 +9,7 @@
 #include "i2c.h"
 #include "rv_plic.h"
 #include "dev_access.h"
+#include "timer.h"
 
 // A timeout of 1 second should be plenty; reading at 100kbps.
 const uint32_t timeout_usecs = 1000 * 1000;
@@ -78,6 +79,7 @@ int servo_test(uint8_t* data) {
   data[0] = 0x00; // Config register
   data[1] = 0x01; // Enable servo 1
 
+  puts("Enabling servo 1.");
   if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
     puts("Failed to set config register.");
     return -3;
@@ -87,16 +89,18 @@ int servo_test(uint8_t* data) {
   data[1] = 0x00; // Least significant byte of microseconds
   data[2] = 0x03; // Most significant byte of microseconds
 
+  puts("Turning servo 1 first.");
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to turn servo 1, first time.");
     return -4;
   }
 
-  for (int i = 0; i < 0x300; i++) {
-    putchar('.');
-  }
-  puts("");
+  arch_local_irq_enable();
+  asm volatile("wfi");
+  asm volatile("wfi");
+  arch_local_irq_disable();
 
+  puts("Turning servo 1 second time.");
   data[0] = 0x01; // Servo 1 register
   data[1] = 0x00; // Least significant byte of microseconds
   data[2] = 0x04; // Most significant byte of microseconds
@@ -106,14 +110,15 @@ int servo_test(uint8_t* data) {
     return -5;
   }
 
-  for (int i = 0; i < 0x400; i++) {
-    putchar('.');
-  }
-  puts("");
+  arch_local_irq_enable();
+  asm volatile("wfi");
+  asm volatile("wfi");
+  arch_local_irq_disable();
 
   data[0] = 0x00; // Config register
   data[1] = 0x02; // Enable servo 2
 
+  puts("Enabling servo 2.");
   if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
     puts("Failed to set config register.");
     return -6;
@@ -123,37 +128,45 @@ int servo_test(uint8_t* data) {
   data[1] = 0x00; // Least significant byte of microseconds
   data[2] = 0x03; // Most significant byte of microseconds
 
+  puts("Turning servo 2 first time.");
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to turn servo 2, first time.");
     return -7;
   }
 
-  for (int i = 0; i < 0x300; i++) {
-    putchar('.');
-  }
-  puts("");
+  arch_local_irq_enable();
+  asm volatile("wfi");
+  asm volatile("wfi");
+  arch_local_irq_disable();
 
   data[0] = 0x03; // Servo 2 register
   data[1] = 0x00; // Least significant byte of microseconds
   data[2] = 0x04; // Most significant byte of microseconds
 
+  puts("Turning servo 2 second time.");
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to turn servo 2, second time.");
     return -8;
   }
 
-  for (int i = 0; i < 0x400; i++) {
-    putchar('.');
-  }
-  puts("");
+  arch_local_irq_enable();
+  asm volatile("wfi");
+  asm volatile("wfi");
+  arch_local_irq_disable();
 
   data[0] = 0x00; // Config register
   data[1] = 0x00; // Disable both servos
 
+  puts("Disabling both servos.");
   if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
     puts("Failed to set config register.");
     return -9;
   }
+
+  arch_local_irq_enable();
+  asm volatile("wfi");
+  asm volatile("wfi");
+  arch_local_irq_disable();
 
   return 0;
 }
@@ -178,9 +191,17 @@ int main(void) {
   int ret_val = get_id(data);
   if(ret_val) return ret_val;
 
+  puts("Initializing timer.");
+  arch_local_irq_disable();
+  timer_init();
+  timer_enable(30*SYSCLK_FREQ);
+
   puts("Doing servo test.");
   ret_val = servo_test(data);
-  if(ret_val) return ret_val;
+  if(ret_val != 0) {
+    puts("Failed!");
+    return ret_val;
+  }
   puts("Success!");
 
   while(1){}
