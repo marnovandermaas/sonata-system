@@ -66,6 +66,13 @@ int get_id(uint8_t* data) {
   return 0;
 }
 
+void wait_between_actions() {
+  arch_local_irq_enable();
+  asm volatile("wfi");
+  asm volatile("wfi");
+  arch_local_irq_disable();
+}
+
 int servo_test(uint8_t* data) {
   const uint8_t kIdAddr = 0x15u;
 
@@ -85,9 +92,10 @@ int servo_test(uint8_t* data) {
     return -3;
   }
 
+  // Rotating 90 degrees which is mapped to maximum microseconds 2325 = 0x915.
   data[0] = 0x01; // Servo 1 register
-  data[1] = 0x00; // Least significant byte of microseconds
-  data[2] = 0x03; // Most significant byte of microseconds
+  data[1] = 0x15; // Least significant byte of microseconds
+  data[2] = 0x09; // Most significant byte of microseconds
 
   puts("Turning servo 1 first.");
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
@@ -95,25 +103,20 @@ int servo_test(uint8_t* data) {
     return -4;
   }
 
-  arch_local_irq_enable();
-  asm volatile("wfi");
-  asm volatile("wfi");
-  arch_local_irq_disable();
+  wait_between_actions();
+
+  // Rotating back to 0 degrees which is mapped to halfway between minimum microseconds (575) and maximum. This is 1450 = 0x5AA
+  data[0] = 0x01; // Servo 1 register
+  data[1] = 0xaa; // Least significant byte of microseconds
+  data[2] = 0x05; // Most significant byte of microseconds
 
   puts("Turning servo 1 second time.");
-  data[0] = 0x01; // Servo 1 register
-  data[1] = 0x00; // Least significant byte of microseconds
-  data[2] = 0x04; // Most significant byte of microseconds
-
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to turn servo 1, second time.");
     return -5;
   }
 
-  arch_local_irq_enable();
-  asm volatile("wfi");
-  asm volatile("wfi");
-  arch_local_irq_disable();
+  wait_between_actions();
 
   data[0] = 0x00; // Config register
   data[1] = 0x02; // Enable servo 2
@@ -125,8 +128,8 @@ int servo_test(uint8_t* data) {
   }
 
   data[0] = 0x03; // Servo 2 register
-  data[1] = 0x00; // Least significant byte of microseconds
-  data[2] = 0x03; // Most significant byte of microseconds
+  data[1] = 0x15; // Least significant byte of microseconds
+  data[2] = 0x09; // Most significant byte of microseconds
 
   puts("Turning servo 2 first time.");
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
@@ -134,14 +137,11 @@ int servo_test(uint8_t* data) {
     return -7;
   }
 
-  arch_local_irq_enable();
-  asm volatile("wfi");
-  asm volatile("wfi");
-  arch_local_irq_disable();
+  wait_between_actions();
 
   data[0] = 0x03; // Servo 2 register
-  data[1] = 0x00; // Least significant byte of microseconds
-  data[2] = 0x04; // Most significant byte of microseconds
+  data[1] = 0xaa; // Least significant byte of microseconds
+  data[2] = 0x05; // Most significant byte of microseconds
 
   puts("Turning servo 2 second time.");
   if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
@@ -149,10 +149,7 @@ int servo_test(uint8_t* data) {
     return -8;
   }
 
-  arch_local_irq_enable();
-  asm volatile("wfi");
-  asm volatile("wfi");
-  arch_local_irq_disable();
+  wait_between_actions();
 
   data[0] = 0x00; // Config register
   data[1] = 0x00; // Disable both servos
@@ -163,10 +160,7 @@ int servo_test(uint8_t* data) {
     return -9;
   }
 
-  arch_local_irq_enable();
-  asm volatile("wfi");
-  asm volatile("wfi");
-  arch_local_irq_disable();
+  wait_between_actions();
 
   return 0;
 }
@@ -194,7 +188,7 @@ int main(void) {
   puts("Initializing timer.");
   arch_local_irq_disable();
   timer_init();
-  timer_enable(30*SYSCLK_FREQ);
+  timer_enable(2*SYSCLK_FREQ/2);
 
   puts("Doing servo test.");
   ret_val = servo_test(data);
