@@ -2,6 +2,11 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+// References:
+// - https://github.com/pimoroni/pantilt-hat/blob/master/library/pantilthat/pantilt.py
+// - https://github.com/kplindegaard/smbus2
+// - https://www.nxp.com/docs/en/application-note/AN4471.pdf
+
 #include <string.h>
 #include <ctype.h>
 
@@ -85,9 +90,10 @@ int servo_test(uint8_t* data) {
 
   data[0] = 0x00; // Config register
   data[1] = 0x01; // Enable servo 1
+  data[2] = 0x00; // MSB
 
   puts("Enabling servo 1.");
-  if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
+  if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to set config register.");
     return -3;
   }
@@ -118,11 +124,12 @@ int servo_test(uint8_t* data) {
 
   wait_between_actions();
 
-  data[0] = 0x00; // Config register
+  /*data[0] = 0x00; // Config register
   data[1] = 0x02; // Enable servo 2
+  data[2] = 0x00; // MSB
 
   puts("Enabling servo 2.");
-  if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
+  if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to set config register.");
     return -6;
   }
@@ -149,15 +156,58 @@ int servo_test(uint8_t* data) {
     return -8;
   }
 
+  wait_between_actions();*/
+
+  data[0] = 0x00; // Config register
+  // 0x14 doesn't work ( on, PWM, enable)
+  // 0x04 doesn't work (off, PWM, enable)
+  data[1] = 0x0C; // Enable lights in RGB mode
+  data[2] = 0x00; // MSB
+
+  puts("Enabling lights.");
+  if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
+    puts("Failed to set config register.");
+    return -9;
+  }
+
+  wait_between_actions();
+
+  data[0] = 0x05; // WS2812 (LEDs) register
+  data[1] = 0x20; // Length 32
+  for (int i = 0; i < 32; i++) {
+    data[i+2] = 0x80; // About half brightness for all colors
+  }
+
+  puts("Turning on LEDs half brightness.");
+  if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
+    puts("Failed turning on LEDs");
+    return -10;
+  }
+  
+  //TODO set the other 32 LEDs.
+
+  wait_between_actions();
+
+  data[0] = 0x4E; // Update register address
+  data[1] = 0x01; // Update
+  data[2] = 0x00;
+
+  puts("Updating LEDs.");
+  if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
+    puts("Failed updating LEDs");
+    return -11;
+  }
+
   wait_between_actions();
 
   data[0] = 0x00; // Config register
-  data[1] = 0x00; // Disable both servos
+  data[1] = 0x00; // Disable both servos and light
+  data[2] = 0x00;
 
-  puts("Disabling both servos.");
-  if(i2c_write(i2c, kIdAddr, data, 2, timeout_usecs)) {
+  puts("Disabling both servos and light.");
+  if(i2c_write(i2c, kIdAddr, data, 3, timeout_usecs)) {
     puts("Failed to set config register.");
-    return -9;
+    return -12;
   }
 
   wait_between_actions();
