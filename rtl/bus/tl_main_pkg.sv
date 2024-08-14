@@ -10,9 +10,6 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_SPACE_REV_TAG     = 32'h 30000000;
   localparam logic [31:0] ADDR_SPACE_GPIO        = 32'h 80000000;
   localparam logic [31:0] ADDR_SPACE_PWM         = 32'h 80001000;
-  localparam logic [31:0] ADDR_SPACE_RPI_GPIO    = 32'h 80006000;
-  localparam logic [31:0] ADDR_SPACE_ARD_GPIO    = 32'h 80007000;
-  localparam logic [31:0] ADDR_SPACE_PMOD_GPIO   = 32'h 80008000;
   localparam logic [31:0] ADDR_SPACE_RGBLED_CTRL = 32'h 80009000;
   localparam logic [31:0] ADDR_SPACE_HW_REV      = 32'h 8000a000;
   localparam logic [31:0] ADDR_SPACE_TIMER       = 32'h 80040000;
@@ -31,15 +28,17 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_SPACE_SPI_ARD     = 32'h 80305000;
   localparam logic [31:0] ADDR_SPACE_SPI_MKR     = 32'h 80306000;
   localparam logic [31:0] ADDR_SPACE_USBDEV      = 32'h 80400000;
+  localparam logic [31:0] ADDR_SPACE_GPIO0       = 32'h 80500000;
+  localparam logic [31:0] ADDR_SPACE_GPIO1       = 32'h 80501000;
+  localparam logic [31:0] ADDR_SPACE_GPIO2       = 32'h 80502000;
+  localparam logic [31:0] ADDR_SPACE_GPIO3       = 32'h 80503000;
+  localparam logic [31:0] ADDR_SPACE_GPIO4       = 32'h 80504000;
   localparam logic [31:0] ADDR_SPACE_RV_PLIC     = 32'h 88000000;
 
   localparam logic [31:0] ADDR_MASK_SRAM        = 32'h 0003ffff;
   localparam logic [31:0] ADDR_MASK_REV_TAG     = 32'h 00003fff;
   localparam logic [31:0] ADDR_MASK_GPIO        = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_PWM         = 32'h 00000fff;
-  localparam logic [31:0] ADDR_MASK_RPI_GPIO    = 32'h 00000fff;
-  localparam logic [31:0] ADDR_MASK_ARD_GPIO    = 32'h 00000fff;
-  localparam logic [31:0] ADDR_MASK_PMOD_GPIO   = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_RGBLED_CTRL = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_HW_REV      = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_TIMER       = 32'h 0000ffff;
@@ -58,38 +57,45 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_MASK_SPI_ARD     = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_SPI_MKR     = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_USBDEV      = 32'h 00000fff;
+  localparam logic [31:0] ADDR_MASK_GPIO0       = 32'h 00000fff;
+  localparam logic [31:0] ADDR_MASK_GPIO1       = 32'h 00000fff;
+  localparam logic [31:0] ADDR_MASK_GPIO2       = 32'h 00000fff;
+  localparam logic [31:0] ADDR_MASK_GPIO3       = 32'h 00000fff;
+  localparam logic [31:0] ADDR_MASK_GPIO4       = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_RV_PLIC     = 32'h 03ffffff;
 
   localparam int N_HOST   = 2;
-  localparam int N_DEVICE = 26;
+  localparam int N_DEVICE = 28;
 
   typedef enum int {
     TlSram = 0,
     TlRevTag = 1,
     TlGpio = 2,
     TlPwm = 3,
-    TlRpiGpio = 4,
-    TlArdGpio = 5,
-    TlPmodGpio = 6,
-    TlRgbledCtrl = 7,
-    TlHwRev = 8,
-    TlTimer = 9,
-    TlUart0 = 10,
-    TlUart1 = 11,
-    TlUart2 = 12,
-    TlUart3 = 13,
-    TlUart4 = 14,
-    TlI2C0 = 15,
-    TlI2C1 = 16,
-    TlSpiFlash = 17,
-    TlSpiLcd = 18,
-    TlSpiEth = 19,
-    TlSpiRp0 = 20,
-    TlSpiRp1 = 21,
-    TlSpiArd = 22,
-    TlSpiMkr = 23,
-    TlUsbdev = 24,
-    TlRvPlic = 25
+    TlRgbledCtrl = 4,
+    TlHwRev = 5,
+    TlTimer = 6,
+    TlUart0 = 7,
+    TlUart1 = 8,
+    TlUart2 = 9,
+    TlUart3 = 10,
+    TlUart4 = 11,
+    TlI2C0 = 12,
+    TlI2C1 = 13,
+    TlSpiFlash = 14,
+    TlSpiLcd = 15,
+    TlSpiEth = 16,
+    TlSpiRp0 = 17,
+    TlSpiRp1 = 18,
+    TlSpiArd = 19,
+    TlSpiMkr = 20,
+    TlUsbdev = 21,
+    TlGpio0 = 22,
+    TlGpio1 = 23,
+    TlGpio2 = 24,
+    TlGpio3 = 25,
+    TlGpio4 = 26,
+    TlRvPlic = 27
   } tl_device_e;
 
   typedef enum int {

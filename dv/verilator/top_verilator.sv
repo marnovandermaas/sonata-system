@@ -9,6 +9,8 @@ module top_verilator (input logic clk_i, rst_ni);
   localparam BaudRate       = 921_600;
   localparam EnableCHERI    = 1'b1;
 
+  logic unused_uart[3];
+
   logic uart_sys_rx, uart_sys_tx;
 
   logic uart_aux_rx, uart_aux_tx;
@@ -35,6 +37,8 @@ module top_verilator (input logic clk_i, rst_ni);
   wire rst_usb_n = rst_ni;
 
   // Instantiating the Sonata System.
+  // TODO instantiate this with only two UARTs and no SPI when bus is
+  // parameterized.
   sonata_system u_sonata_system (
     // Main system clock and reset
     .clk_sys_i      (clk_i),
@@ -47,79 +51,31 @@ module top_verilator (input logic clk_i, rst_ni);
     .gp_i     (0),
     .gp_o     ( ),
     .pwm_o    ( ),
-    .rp_gp_i  (0),
-    .rp_gp_o  ( ),
-    .ard_gp_i (0),
-    .ard_gp_o ( ),
-    .pmod_gp_i(0),
-    .pmod_gp_o( ),
+    .gp_headers_i ('{default: '0}),
+    .gp_headers_o ( ),
 
-    // UART 0 TX and RX
-    .uart0_rx_i     (uart_sys_rx),
-    .uart0_tx_o     (uart_sys_tx),
+    // UARTs
+    .uart_rx_i     ('{uart_sys_rx, uart_aux_rx, 0, 0, 0}),
+    .uart_tx_o     ('{uart_sys_tx, uart_aux_tx, unused_uart[0], unused_uart[1], unused_uart[2]}),
 
-    // UART 1 TX and RX
-    .uart1_rx_i     (uart_aux_rx),
-    .uart1_tx_o     (uart_aux_tx),
-
-    .uart2_rx_i     (),
-    .uart2_tx_o     (),
-
-    .uart3_rx_i     (),
-    .uart3_tx_o     (),
-
-    .uart4_rx_i     (),
-    .uart4_tx_o     (),
-
-    .spi_flash_rx_i (0),
-    .spi_flash_tx_o ( ),
-    .spi_flash_sck_o( ),
-
-    .spi_lcd_rx_i (0),
-    .spi_lcd_tx_o ( ),
-    .spi_lcd_sck_o( ),
-
-    .spi_eth_rx_i  (0),
-    .spi_eth_tx_o  ( ),
-    .spi_eth_sck_o ( ),
+    // SPI hosts
+    .spi_rx_i ('{default: '0}),
+    .spi_tx_o ( ),
+    .spi_sck_o( ),
     .spi_eth_irq_ni(1'b1),
-
-    .spi_rp0_rx_i (0),
-    .spi_rp0_tx_o ( ),
-    .spi_rp0_sck_o( ),
-
-    .spi_rp1_rx_i (0),
-    .spi_rp1_tx_o ( ),
-    .spi_rp1_sck_o( ),
-
-    .spi_ard_rx_i (0),
-    .spi_ard_tx_o ( ),
-    .spi_ard_sck_o( ),
-
-    .spi_mkr_rx_i (0),
-    .spi_mkr_tx_o ( ),
-    .spi_mkr_sck_o( ),
 
     .cheri_en_i (EnableCHERI),
     // CHERI output
     .cheri_err_o(),
     .cheri_en_o (),
 
-    // I2C bus 0
-    .i2c0_scl_i     (scl0),
-    .i2c0_scl_o     (scl0_o),
-    .i2c0_scl_en_o  (scl0_oe),
-    .i2c0_sda_i     (sda0),
-    .i2c0_sda_o     (sda0_o),
-    .i2c0_sda_en_o  (sda0_oe),
-
-    // I2C bus 1
-    .i2c1_scl_i     (scl1),
-    .i2c1_scl_o     (scl1_o),
-    .i2c1_scl_en_o  (scl1_oe),
-    .i2c1_sda_i     (sda1),
-    .i2c1_sda_o     (sda1_o),
-    .i2c1_sda_en_o  (sda1_oe),
+    // I2C buses
+    .i2c_scl_i     ('{scl0,    scl1}),
+    .i2c_scl_o     ('{scl0_o,  scl1_o}),
+    .i2c_scl_en_o  ('{scl0_oe, scl1_oe}),
+    .i2c_sda_i     ('{sda0,    sda1}),
+    .i2c_sda_o     ('{sda0_o,  sda1_o}),
+    .i2c_sda_en_o  ('{sda0_oe, sda1_oe}),
 
     // Reception from USB host via transceiver
     .usb_dp_i         (1'b0),

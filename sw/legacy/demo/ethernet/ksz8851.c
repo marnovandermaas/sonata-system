@@ -222,7 +222,7 @@ static void ksz8851_recv(struct netif *netif) {
 
     // Reset QMU RXQ frame pointer to zero.
     ksz8851_reg_write(spi, ETH_RXFDPR, 0x4000);
-    
+
     // Start QMU DMA transfer operation
     ksz8851_reg_set(spi, ETH_RXQCR, StartDmaAccess);
 
