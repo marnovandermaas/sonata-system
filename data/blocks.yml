@@ -1,0 +1,36 @@
+uart:
+  instances: 5
+  ios:
+    - name:    tx
+      type:    output
+    - name:    rx
+      type:    input
+      default: 1
+i2c:
+  instances: 2
+  ios:
+    - name:    scl
+      type:    in_out
+      combine: and
+    - name:    sda
+      type:    in_out
+      combine: and
+spi:
+  instances: 7
+  ios:
+    - name:    cs_n
+      type:    output
+    - name:    sck
+      type:    output
+    - name:    tx
+      type:    output
+    - name:    rx
+      type:    input
+      default: 0
+gpio:
+  instances: 5 # 2 RPi, 2 Ard, 1 Pmod
+  ios:
+    - name:    ios
+      type:    in_out
+      combine: no
+      length:  16
