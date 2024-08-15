@@ -99,146 +99,42 @@
         size_byte: "0x00010000",
       }],
     },
-    { name:  "uart0", // UART 0 for serial I/O
+    % for i in range(uart_num):
+    { name:  "uart${i}", // UART ${i} for serial I/O
       type:  "device",
       clock: "clk_sys_i",
       reset: "rst_sys_ni",
       xbar:  false,
       addr_range: [{
-        base_addr: "0x80100000",
+        base_addr: "0x8010${i}000",
         size_byte: "0x00001000",
       }],
     },
-    { name:  "uart1", // UART 1 for serial I/O
+    % endfor
+    % for i in range(i2c_num):
+    { name:  "i2c${i}", // I2C bus ${i}
       type:  "device",
       clock: "clk_sys_i",
       reset: "rst_sys_ni",
       xbar:  false,
       addr_range: [{
-        base_addr: "0x80101000",
+        base_addr: "0x8020${i}000",
         size_byte: "0x00001000",
       }],
     },
-    { name:  "uart2", // UART 2 for Raspberry Pi HAT
+    % endfor
+    % for i in range(spi_num):
+    { name:  "spi${i}", // Serial peripheral interface ${i}
       type:  "device",
       clock: "clk_sys_i",
       reset: "rst_sys_ni",
       xbar:  false,
       addr_range: [{
-        base_addr: "0x80102000",
+        base_addr: "0x8030${i}000",
         size_byte: "0x00001000",
       }],
     },
-    { name:  "uart3", // UART 3 for mikroBUS Click
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80103000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "uart4", // UART 4 for RS-232
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80104000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "i2c0", // I2C bus 0
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80200000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "i2c1", // I2C bus 1
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80201000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_flash", // Serial peripheral interface for flash memory
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80300000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_lcd", // Serial peripheral interface for LCD screen
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80301000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_eth", // Serial peripheral interface for Ethernet MAC
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80302000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_rp0", // Serial peripheral interface for R-Pi header
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80303000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_rp1", // Serial peripheral interface for R-Pi header
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80304000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_ard", // Serial peripheral interface for Arduino shield
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80305000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "spi_mkr", // Serial peripheral interface for mikro BUS
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80306000",
-        size_byte: "0x00001000",
-      }],
-    },
+    % endfor
     { name:  "usbdev", // USB device
       type:  "device",
       clock: "clk_usb_i",
@@ -249,56 +145,18 @@
         size_byte: "0x00001000",
       }],
     },
-    { name:  "gpio0", // General purpose input and output
+    % for i in range(gpio_num):
+    { name:  "gpio${i}", // General purpose input and output ${i}
       type:  "device",
       clock: "clk_sys_i",
       reset: "rst_sys_ni",
       xbar:  false,
       addr_range: [{
-        base_addr: "0x80500000",
+        base_addr: "0x8050${i}000",
         size_byte: "0x00001000",
       }],
     },
-    { name:  "gpio1", // General purpose input and output
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80501000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "gpio2", // General purpose input and output
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80502000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "gpio3", // General purpose input and output
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80503000",
-        size_byte: "0x00001000",
-      }],
-    },
-    { name:  "gpio4", // General purpose input and output
-      type:  "device",
-      clock: "clk_sys_i",
-      reset: "rst_sys_ni",
-      xbar:  false,
-      addr_range: [{
-        base_addr: "0x80504000",
-        size_byte: "0x00001000",
-      }],
-    },
+    % endfor
     { name:  "rv_plic", // RISC-V platform interrupt controller
       type:  "device",
       clock: "clk_sys_i",
@@ -320,26 +178,19 @@
       "rgbled_ctrl",
       "hw_rev",
       "timer",
-      "uart0",
-      "uart1",
-      "uart2",
-      "uart3",
-      "uart4",
-      "i2c0",
-      "i2c1",
-      "spi_flash",
-      "spi_lcd",
-      "spi_eth",
-      "spi_rp0",
-      "spi_rp1",
-      "spi_ard",
-      "spi_mkr",
+      % for i in range(uart_num):
+      "uart${i}",
+      % endfor
+      % for i in range(i2c_num):
+      "i2c${i}",
+      % endfor
+      % for i in range(spi_num):
+      "spi${i}",
+      % endfor
       "usbdev",
-      "gpio0",
-      "gpio1",
-      "gpio2",
-      "gpio3",
-      "gpio4",
+      % for i in range(gpio_num):
+      "gpio${i}",
+      % endfor
       "rv_plic",
     ],
     dbg_host: ["sram"],
