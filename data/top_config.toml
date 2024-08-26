@@ -395,8 +395,10 @@ block_ios = [{block = "uart", instance = 3, io = "rx"}]
 ## PMODs
 [[pins]]
 name = "pmod0"
+length = 8
 block_ios = [{block = "gpio", instance = 4, io = 0}]
 
 [[pins]]
 name = "pmod1"
+length = 8
 block_ios = [{block = "gpio", instance = 4, io = 8}]

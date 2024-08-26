@@ -38,6 +38,7 @@ class PinIo(BaseModel):
 
 class Pin(BaseModel):
     name: str
+    length: int
     block_ios: list[PinIo]
 
 
