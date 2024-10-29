@@ -1205,11 +1205,11 @@ module sonata_system
     .i2c_sda_i(i2c_sda_h2d),
     .i2c_sda_en_i(i2c_sda_en_h2d),
 
-    .spi_rx_o(spi_rx),
-    .spi_tx_i(spi_tx),
-    .spi_tx_en_i('{default: 'b1}),
-    .spi_sck_i(spi_sck),
-    .spi_sck_en_i('{default: 'b1}),
+    .spi_cipo_o(spi_rx),
+    .spi_copi_i(spi_tx),
+    .spi_copi_en_i('{default: 'b1}),
+    .spi_sclk_i(spi_sck),
+    .spi_sclk_en_i('{default: 'b1}),
     .spi_cs_i(spi_cs),
     .spi_cs_en_i('{default: '1}), // All continuously enabled.
 
