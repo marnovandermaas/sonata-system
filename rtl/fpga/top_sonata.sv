@@ -274,11 +274,16 @@ module top_sonata
     .clk_hr3x_i     (clk_hr3x),
     .rst_hr_ni      (rst_hr_n),
 
+    // Interrupts to be fed into PLIC
+    //TODO feed interrupts into PLIC
+    //.interrupts_i   ({
+    //                  mb9, // mikroBUS Click interrupt
+    //                  microsd_det, // MicroSD card insertion detection
+    //                }),
+
     // GPIO
     .gp_i           ({
-                      14'b0,
-                      mb9, // mikroBUS Click interrupt
-                      microsd_det, // MicroSD card insertion detection
+                      16'b0,
                       sel_sw_n, // Software selection switches
                       nav_sw_n, // joystick
                       user_sw_n // user switches

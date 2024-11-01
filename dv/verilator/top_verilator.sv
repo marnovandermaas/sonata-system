@@ -266,6 +266,8 @@ module top_verilator (input logic clk_i, rst_ni);
   wire mb9 = 1'b1; // undriven, apt to float high.
   wire microsd_det = 1'b1; // pulled high to indicate the _absence_ of a microSD card.
 
+  logic unused_interrupts = mb9 ^ microsd_det;
+
   // Instantiating the Sonata System.
   sonata_system #(
     .CheriErrWidth   ( CheriErrWidth   ),
@@ -288,9 +290,7 @@ module top_verilator (input logic clk_i, rst_ni);
     .rst_hr_ni      (rst_hr_n),
 
     .gp_i           ({
-                      14'b0,
-                      mb9, // mikroBUS Click interrupt
-                      microsd_det, // MicroSD card insertion detection
+                      16'b0,
                       sel_sw_n, // Software selection switches
                       nav_sw_n, // joystick
                       user_sw_n // user switches
