@@ -252,7 +252,7 @@ module top_sonata
   assign enable_cheri = 1'b1;
 
   logic rgbled_dout;
-  logic [23:0] unused_gp_o;
+  logic [21:0] unused_gp_o;
 
   wire spi_board_copi;
   wire spi_board_cipo;
@@ -294,6 +294,7 @@ module top_sonata
                     }),
     .gp_o           ({
                       unused_gp_o,
+                      ethmac_rst, ethmac_cs,
                       usrLed // User LEDs (8 bits)
                     }),
     .gp_o_en        (),
@@ -320,8 +321,8 @@ module top_sonata
     .ethmac_copi_o           (ethmac_copi),
     .ethmac_cipo_i           (ethmac_cipo),
     .ethmac_sclk_o           (ethmac_sclk),
-    .ethmac_cs_o             (ethmac_cs),
-    .ethmac_rst_o            (ethmac_rst),
+    .ethmac_cs_o             (),
+    .ethmac_rst_o            (),
     .ethmac_irq_ni           (ethmac_intr), // Interrupt for Ethernet is out of band
 
     // CHERI signals

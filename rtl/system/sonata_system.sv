@@ -1139,7 +1139,7 @@ module sonata_system
     // SPI signals.
     .spi_copi_o          (ethmac_copi_o),
     .spi_cipo_i          (ethmac_cipo_i),
-    .spi_cs_o            ({ethmac_rst_o, ethmac_cs_o}),
+    .spi_cs_o            (),
     .spi_clk_o           (ethmac_sclk_o)
   );
 
