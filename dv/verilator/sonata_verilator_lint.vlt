@@ -47,11 +47,7 @@ lint_off -rule WIDTHEXPAND -file "*/rtl/cheri_pkg.sv"
 lint_off -rule WIDTHTRUNC -file "*/rtl/cheri_pkg.sv"
 
 // Lint error for PULP debug module.
-lint_off -rule UNUSED -file "*pulp_riscv_dbg*" -match "*not used*"
-lint_off -rule IMPERFECTSCH -file "*pulp_riscv_dbg*"
-lint_off -rule DECLFILENAME -file "*pulp_riscv_dbg*"
-lint_off -rule PINMISSING -file "*pulp_riscv_dbg*"
-lint_off -rule WIDTH -file "*pulp_riscv_dbg/src/dm_mem.sv"
+lint_off -rule UNUSEDSIGNAL -file "*pulp_cheriot_debug_module*" -match "*not used*"
 
 lint_off -rule IMPERFECTSCH -file "*lowrisc_prim_flop_2sync_0/rtl/prim_flop_2sync.sv"
 lint_off -rule UNUSED -file "*ibex_register_file_fpga*"
