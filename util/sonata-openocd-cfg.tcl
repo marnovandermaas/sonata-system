@@ -10,7 +10,7 @@ ftdi channel 1
 ftdi layout_init 0x0088 0x008b
 
 # Configure JTAG chain and the target processor
-set _CHIPNAME riscv
+set _CHIPNAME riscv-cheriot
 
 # Sonata JTAG IDCODE
 set _EXPECTED_ID 0x11011CDF
