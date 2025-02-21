@@ -79,7 +79,7 @@ module dm_mem #(
 
   localparam logic [DbgAddressBits-1:0] HaltedAddr    = 'h100;
   localparam logic [DbgAddressBits-1:0] GoingAddr     = 'h108;
-  //localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h110;
+  localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h110;
   localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h118;
 
   logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
@@ -235,8 +235,8 @@ module dm_mem #(
     // write data in csr register
     data_valid_o   = 1'b0;
     exception      = 1'b0;
-    halted_aligned = 2'b11;
-    going          = 1'b1;
+    halted_aligned = '0;
+    going          = 1'b0;
 
     // The resume ack signal is lowered when the resume request is deasserted
     if (clear_resumeack_i) begin
@@ -253,6 +253,12 @@ module dm_mem #(
           end
           GoingAddr: begin
             going = 1'b1;
+          end
+          ResumingAddr: begin
+            // clear the halted flag as the hart resumed execution
+            halted_d_aligned[wdata_hartsel] = 1'b0;
+            // set the resuming flag which needs to be cleared by the debugger
+            resuming_d_aligned[wdata_hartsel] = 1'b1;
           end
           // an exception occurred during execution
           ExceptionAddr: exception = 1'b1;
@@ -336,7 +342,7 @@ module dm_mem #(
 
     if (ndmreset_i) begin
       // When harts are reset, they are neither halted nor resuming.
-      halted_d_aligned   = 2'b11;
+      halted_d_aligned   = '0;
       resuming_d_aligned = '0;
     end
 
@@ -527,7 +533,7 @@ module dm_mem #(
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      halted_q   <= 1'b1;
+      halted_q   <= 1'b0;
       resuming_q <= 1'b0;
     end else begin
       halted_q   <= SelectableHarts & halted_d;
