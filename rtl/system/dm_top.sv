@@ -177,6 +177,8 @@ module dm_top #(
     .master_be_o             ( host_be_o             ),
     .master_gnt_i            ( host_gnt_i            ),
     .master_r_valid_i        ( host_r_valid_i        ),
+    .master_r_err_i          ( 1'b0                  ),
+    .master_r_other_err_i    ( 1'b0                  ),
     .master_r_rdata_i        ( host_r_rdata_i        ),
     .dmactive_i              ( dmactive_o            ),
     .sbaddress_i             ( sbaddress_csrs_sba    ),
@@ -241,6 +243,7 @@ module dm_top #(
     .clk_i            (clk_i        ),
     .rst_ni           (rst_ni       ),
     .testmode_i       (testmode_i   ),
+    .test_rst_ni      (1'b1         ),
 
     .dmi_rst_no       (dmi_rst_n    ),
     .dmi_req_o        (dmi_req      ),
