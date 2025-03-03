@@ -716,17 +716,19 @@ module sonata_system
   );
 
   ibexc_top_tracing #(
-    .DmHaltAddr      ( tl_ifetch_pkg::ADDR_SPACE_DBG_DEV + dm::HaltAddress[31:0]      ),
-    .DmExceptionAddr ( tl_ifetch_pkg::ADDR_SPACE_DBG_DEV + dm::ExceptionAddress[31:0] ),
-    .DbgTriggerEn    ( DbgTriggerEn                            ),
-    .DbgHwBreakNum   ( DbgHwBreakNum                           ),
-    .MHPMCounterNum  ( 13                                      ),
+    .DmHaltAddr      ( tl_ifetch_pkg::ADDR_SPACE_DBG_DEV +
+                       dm::HaltAddress[31:0]               ),
+    .DmExceptionAddr ( tl_ifetch_pkg::ADDR_SPACE_DBG_DEV +
+                       dm::ExceptionAddress[31:0]          ),
+    .DbgTriggerEn    ( DbgTriggerEn                        ),
+    .DbgHwBreakNum   ( DbgHwBreakNum                       ),
+    .MHPMCounterNum  ( 13                                  ),
     // For now revocation tags apply to all of SRAM.
-    .HeapBase        ( tl_main_pkg::ADDR_SPACE_SRAM            ),
-    .TSMapBase       ( tl_main_pkg::ADDR_SPACE_REV_TAG         ),
-    .TSMapSize       ( RevTagDepth                             ),
-    .RV32B           ( ibex_pkg::RV32BFull                     ),
-    .ICache          ( 1'b1                                    )
+    .HeapBase        ( tl_main_pkg::ADDR_SPACE_SRAM        ),
+    .TSMapBase       ( tl_main_pkg::ADDR_SPACE_REV_TAG     ),
+    .TSMapSize       ( RevTagDepth                         ),
+    .RV32B           ( ibex_pkg::RV32BFull                 ),
+    .ICache          ( 1'b1                                )
   ) u_top_tracing (
     .clk_i                  (clk_sys_i),
     .rst_ni                 (rst_core_n),
