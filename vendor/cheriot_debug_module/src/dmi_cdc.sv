@@ -44,42 +44,38 @@ module dmi_cdc (
 
   // TODO: Make it clean for synthesis.
 
-  prim_fifo_async #(
+  prim_fifo_async_simple #(
     .Width       ( $bits(dm::dmi_req_t) ),
-    .Depth       ( 4 )
+    .EnRzHs      ( 1                    )
   ) i_cdc_req (
     .clk_wr_i    ( tck_i            ),
     .rst_wr_ni   ( trst_ni          ),
     .wvalid_i    ( jtag_dmi_valid_i ),
     .wready_o    ( jtag_dmi_ready_o ), // wrclk
     .wdata_i     ( jtag_dmi_req_i   ),
-    .wdepth_o    (                  ),
 
     .clk_rd_i    ( clk_i            ),
     .rst_rd_ni   ( rst_ni           ),
     .rvalid_o    ( core_dmi_valid_o ),
     .rready_i    ( core_dmi_ready_i ),
-    .rdata_o     ( core_dmi_req_o   ),
-    .rdepth_o    (                  )
+    .rdata_o     ( core_dmi_req_o   )
   );
 
-  prim_fifo_async #(
+  prim_fifo_async_simple #(
     .Width       ( $bits(dm::dmi_resp_t) ),
-    .Depth       ( 4 )
+    .EnRzHs      ( 1                    )
   ) i_cdc_resp (
     .clk_wr_i    ( clk_i            ),
     .rst_wr_ni   ( rst_ni           ),
     .wvalid_i    ( core_dmi_valid_i ),
     .wready_o    ( core_dmi_ready_o ), // wrclk
     .wdata_i     ( core_dmi_resp_i  ),
-    .wdepth_o    (                  ),
 
     .clk_rd_i    ( tck_i            ),
     .rst_rd_ni   ( trst_ni          ),
     .rvalid_o    ( jtag_dmi_valid_o ),
     .rready_i    ( jtag_dmi_ready_i ),
-    .rdata_o     ( jtag_dmi_resp_o  ),
-    .rdepth_o    (                  )
+    .rdata_o     ( jtag_dmi_resp_o  )
   );
 
 endmodule : dmi_cdc
