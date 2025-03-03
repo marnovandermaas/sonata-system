@@ -6,6 +6,7 @@
 anytree
 gitpython
 hjson
+importlib-resources
 mako
 mistletoe
 mypy
