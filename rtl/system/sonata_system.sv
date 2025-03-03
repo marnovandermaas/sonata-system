@@ -109,7 +109,6 @@ module sonata_system
   localparam int unsigned MemSize       = 128 * 1024; // 128 KiB
   localparam int unsigned SRAMAddrWidth = $clog2(MemSize);
   localparam int unsigned HyperRAMSize  = 1024 * 1024; // 1 MiB
-  localparam int unsigned DebugStart    = 32'h1a110000;
   localparam int unsigned PwmCtrSize    = 8;
   localparam int unsigned BusAddrWidth  = 32;
   localparam int unsigned BusByteEnable = 4;
@@ -128,8 +127,8 @@ module sonata_system
   localparam int unsigned DataBitsPerMask = BusDataWidth / BusByteEnable;
 
   // Debug functionality is disabled.
-  localparam int unsigned DbgHwBreakNum = 0;
-  localparam bit          DbgTriggerEn  = 1'b0;
+  localparam int unsigned DbgHwBreakNum = 2;
+  localparam bit          DbgTriggerEn  = 1'b1;
 
   typedef enum int {
     CoreD,
@@ -717,8 +716,8 @@ module sonata_system
   );
 
   ibexc_top_tracing #(
-    .DmHaltAddr      ( DebugStart + dm::HaltAddress[31:0]      ),
-    .DmExceptionAddr ( DebugStart + dm::ExceptionAddress[31:0] ),
+    .DmHaltAddr      ( tl_ifetch_pkg::ADDR_SPACE_DBG_DEV + dm::HaltAddress[31:0]      ),
+    .DmExceptionAddr ( tl_ifetch_pkg::ADDR_SPACE_DBG_DEV + dm::ExceptionAddress[31:0] ),
     .DbgTriggerEn    ( DbgTriggerEn                            ),
     .DbgHwBreakNum   ( DbgHwBreakNum                           ),
     .MHPMCounterNum  ( 13                                      ),
