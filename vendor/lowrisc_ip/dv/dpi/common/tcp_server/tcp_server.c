@@ -413,6 +413,7 @@ struct tcp_server_ctx *tcp_server_create(const char *display_name,
     free(ctx);
     return NULL;
   }
+  printf("tcp_server: successfully returning from tcp_server_create\n");
   return ctx;
 }
 
@@ -433,6 +434,8 @@ void tcp_server_close(struct tcp_server_ctx *ctx) {
 
 void tcp_server_client_close(struct tcp_server_ctx *ctx) {
   assert(ctx);
+
+  printf("tcp_server: tcp_server_client_close ctx-cfd = %d\n", ctx->cfd);
 
   if (!ctx->cfd) {
     return;

@@ -60,6 +60,8 @@ static void update_jtag_signals(struct jtagdpi_ctx *ctx) {
     return;
   }
 
+  printf("update_jtag_signals: %c\n", cmd);
+
   bool act_send_resp = false;
   bool act_quit = false;
 
@@ -79,9 +81,9 @@ static void update_jtag_signals(struct jtagdpi_ctx *ctx) {
     // JTAG read
     act_send_resp = true;
   } else if (cmd == 'B') {
-    // printf("%s: BLINK ON!\n", ctx->display_name);
+    printf("BLINK ON!\n");
   } else if (cmd == 'b') {
-    // printf("%s: BLINK OFF!\n", ctx->display_name);
+    printf("BLINK OFF!\n");
   } else if (cmd == 'Q') {
     // quit (client disconnect)
     act_quit = true;
@@ -131,8 +133,10 @@ void jtagdpi_close(void *ctx_void) {
   if (!ctx) {
     return;
   }
+  printf("jtagdpi_close: calling tcp_server_close\n");
   tcp_server_close(ctx->sock);
   free(ctx);
+  printf("jtagdpi_close: done\n");
 }
 
 void jtagdpi_tick(void *ctx_void, svBit *tck, svBit *tms, svBit *tdi,
