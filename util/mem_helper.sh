@@ -77,10 +77,13 @@ load_program() {
   check_exists "$ELF_FILE" "$NAME: '$ELF_FILE' doesn't exist."
   check_exists "$TCL_FILE" "$NAME: '$TCL_FILE' doesn't exist."
 
+  # TODO functionality to halt core
   openocd -f "$TCL_FILE" \
     -c "load_image $ELF_FILE 0x0" \
     -c "verify_image $ELF_FILE 0x0" \
-    -c "exit"
+    -c "echo \"Doing reset\"" \
+    -c "reset run" \
+    -c "exit" -d4
 }
 
 main() {
