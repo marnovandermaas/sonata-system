@@ -240,6 +240,7 @@ module sonata_system
   // Generate requests from read and write enables.
   assign device_req[Pwm]      = device_re[Pwm]      | device_we[Pwm];
   assign device_req[Timer]    = device_re[Timer]    | device_we[Timer];
+  assign device_req[DbgDev]   = device_re[DbgDev]   | device_we[DbgDev];
 
   // Instruction fetch signals.
   logic                    core_instr_req;
