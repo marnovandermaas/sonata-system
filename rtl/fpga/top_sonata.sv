@@ -35,6 +35,7 @@ module top_sonata
   output logic       ethmac_cs,
 
   output logic       rgbled0,
+  output logic       rgbled_en,
 
   // UART 0
   output logic       ser0_tx,
@@ -190,14 +191,20 @@ module top_sonata
 //input  logic       microsd_dat2, // SPI mode: NC
   output logic       microsd_dat3, // SPI mode: CS_N
   output logic       microsd_cmd,  // SPI mode: COPI
-  input  logic       microsd_det,  // Card insertion detection
+  input  logic       microsd_det,   // Card insertion detection
 
-  inout  wire [7:0]  hyperram_dq,
-  inout  wire        hyperram_rwds,
-  output wire        hyperram_ckp,
-  output wire        hyperram_ckn,
-  output wire        hyperram_nrst,
-  output wire        hyperram_cs
+  // No HyperRAM on Sonata XL
+  // TODO: find a nicer was to disconnect hyperram
+  // inout  wire [7:0]  hyperram_dq,
+  // inout  wire        hyperram_rwds,
+  // output wire        hyperram_ckp,
+  // output wire        hyperram_ckn,
+  // output wire        hyperram_nrst,
+  // output wire        hyperram_cs
+
+  // XL expansion headers
+  inout  logic [79:0] ex0,
+  inout  logic [79:0] ex1
 );
   import sonata_pkg::*;
 
@@ -280,9 +287,11 @@ module top_sonata
     .rst_usb_ni     (rst_usb_n),
 
     // HyperRAM clocks and reset
-    .clk_hr_i       (clk_hr),
-    .clk_hr90p_i    (clk_hr90p),
-    .clk_hr3x_i     (clk_hr3x),
+    // No HyperRAM on Sonata XL
+    // TODO: find a nicer was to disconnect hyperram
+    .clk_hr_i       (1'b0),
+    .clk_hr90p_i    (1'b0),
+    .clk_hr3x_i     (1'b0),
     .rst_hr_ni      (rst_hr_n),
 
     // GPIO
@@ -350,12 +359,14 @@ module top_sonata
 
     .rgbled_dout_o(rgbled_dout),
 
-    .hyperram_dq,
-    .hyperram_rwds,
-    .hyperram_ckp,
-    .hyperram_ckn,
-    .hyperram_nrst,
-    .hyperram_cs,
+    // No HyperRAM on Sonata XL
+    // TODO: find a nicer was to disconnect hyperram
+    .hyperram_dq(),
+    .hyperram_rwds(),
+    .hyperram_ckp(),
+    .hyperram_ckn(),
+    .hyperram_nrst(),
+    .hyperram_cs(),
 
     .rs485_tx_enable_o(rs485_tx_enable),
     .rs485_rx_enable_o(rs485_rx_enable),
@@ -368,6 +379,7 @@ module top_sonata
   );
 
   assign rgbled0 = ~rgbled_dout;
+  assign rgbled_en = 1'b1;
 
   // Tie flash wp_n and hold_n to 1 as they're active low and we don't need either signal
   assign appspi_d2 = 1'b1;

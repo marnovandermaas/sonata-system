@@ -109,6 +109,7 @@ module sonata_system
   localparam int unsigned MemSize       = 128 * 1024; // 128 KiB
   localparam int unsigned SRAMAddrWidth = $clog2(MemSize);
   localparam int unsigned HyperRAMSize  = 1024 * 1024; // 1 MiB
+  localparam int unsigned HyperRAMAddrWidth  = $clog2(HyperRAMSize);
   localparam int unsigned DebugStart    = 32'h1a110000;
   localparam int unsigned PwmCtrSize    = 8;
   localparam int unsigned BusAddrWidth  = 32;
@@ -495,27 +496,42 @@ module sonata_system
     .tl_b_o (tl_sram_b_d2h)
   );
 
-  hyperram #(
-    .HyperRAMClkFreq ( HyperRAMClkFreq ),
-    .HyperRAMSize    ( HyperRAMSize    )
+  // hyperram #(
+  //   .HyperRAMClkFreq ( HyperRAMClkFreq ),
+  //   .HyperRAMSize    ( HyperRAMSize    )
+  // ) u_hyperram (
+  //   .clk_i  (clk_sys_i),
+  //   .rst_ni (rst_sys_ni),
+
+  //   .clk_hr_i,
+  //   .clk_hr90p_i,
+  //   .clk_hr3x_i,
+  //   .rst_hr_ni,
+
+  //   .tl_i (tl_hyperram_ds_h2d),
+  //   .tl_o (tl_hyperram_ds_d2h),
+
+  //   .hyperram_dq,
+  //   .hyperram_rwds,
+  //   .hyperram_ckp,
+  //   .hyperram_ckn,
+  //   .hyperram_nrst,
+  //   .hyperram_cs
+  // );
+
+    sram #(
+    .AddrWidth       ( HyperRAMAddrWidth ),
+    .DataWidth       ( BusDataWidth    ),
+    .DataBitsPerMask ( DataBitsPerMask ),
+    .InitFile        ()
   ) u_hyperram (
     .clk_i  (clk_sys_i),
     .rst_ni (rst_sys_ni),
 
-    .clk_hr_i,
-    .clk_hr90p_i,
-    .clk_hr3x_i,
-    .rst_hr_ni,
-
-    .tl_i (tl_hyperram_ds_h2d),
-    .tl_o (tl_hyperram_ds_d2h),
-
-    .hyperram_dq,
-    .hyperram_rwds,
-    .hyperram_ckp,
-    .hyperram_ckn,
-    .hyperram_nrst,
-    .hyperram_cs
+    .tl_a_i (tl_hyperram_ds_h2d),
+    .tl_a_o (tl_hyperram_ds_d2h),
+    .tl_b_i (),
+    .tl_b_o ()
   );
 
   // Manual M:1 socket instantiation as xbar generator cannot deal with multiple ports for one

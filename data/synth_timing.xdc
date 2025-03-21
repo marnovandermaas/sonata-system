@@ -73,8 +73,10 @@ create_generated_clock -source $clk_sys_source_pin -divide_by 2 \
                        -name clk_appspi [get_port appspi_clk] ;# Flash SPI clk
 create_generated_clock -source $clk_sys_source_pin -divide_by 2 \
                        -name clk_ethmac [get_port ethmac_sclk] ;# Ethernet SPI clk
-create_generated_clock -source $clk_hr90p_source_pin -divide_by 1 \
-                       -name clk_exthr [get_port hyperram_ckp] ;# HyperRAM clk
+# No HyperRAM on Sonata XL
+# TODO: find a nicer was to disconnect hyperram
+# create_generated_clock -source $clk_hr90p_source_pin -divide_by 1 \
+#                        -name clk_exthr [get_port hyperram_ckp] ;# HyperRAM clk
 
 ## Virtual clocks based on generated clocks.
 # Defined here (after generated clocks) to avoid code constant duplication
@@ -701,29 +703,32 @@ set_output_delay -clock clk_ethmac -min [expr {$sclk_ns/2.0 - (8 * 1.1)}] [get_p
 #
 # TODO: add 'real' (non-zero) constraints below and remove set_false_path's
 #       so we know if something has not been instantiated/inferred correctly.
-set_output_delay -clock clk_hr90p -max 0 [get_ports hyperram_ckp]
-set_output_delay -clock clk_hr90p -min 0 [get_ports hyperram_ckp]
-#
-set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_ckn]
-set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_ckn]
-#
-set_input_delay -clock clk_exthr -max 0 [get_ports {hyperram_dq[*]}]
-set_input_delay -clock clk_exthr -min 0 [get_ports {hyperram_dq[*]}]
-#
-set_output_delay -clock clk_exthr -max 0 [get_ports {hyperram_dq[*]}]
-set_output_delay -clock clk_exthr -min 0 [get_ports {hyperram_dq[*]}]
-#
-set_input_delay -clock clk_exthr -max 0 [get_ports hyperram_rwds]
-set_input_delay -clock clk_exthr -min 0 [get_ports hyperram_rwds]
-#
-set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_rwds]
-set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_rwds]
-#
-set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_cs]
-set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_cs]
-#
-set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_nrst]
-set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_nrst]
+
+# No HyperRAM on Sonata XL
+# TODO: find a nicer was to disconnect hyperram
+# set_output_delay -clock clk_hr90p -max 0 [get_ports hyperram_ckp]
+# set_output_delay -clock clk_hr90p -min 0 [get_ports hyperram_ckp]
+# #
+# set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_ckn]
+# set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_ckn]
+# #
+# set_input_delay -clock clk_exthr -max 0 [get_ports {hyperram_dq[*]}]
+# set_input_delay -clock clk_exthr -min 0 [get_ports {hyperram_dq[*]}]
+# #
+# set_output_delay -clock clk_exthr -max 0 [get_ports {hyperram_dq[*]}]
+# set_output_delay -clock clk_exthr -min 0 [get_ports {hyperram_dq[*]}]
+# #
+# set_input_delay -clock clk_exthr -max 0 [get_ports hyperram_rwds]
+# set_input_delay -clock clk_exthr -min 0 [get_ports hyperram_rwds]
+# #
+# set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_rwds]
+# set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_rwds]
+# #
+# set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_cs]
+# set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_cs]
+# #
+# set_output_delay -clock clk_exthr -max 0 [get_ports hyperram_nrst]
+# set_output_delay -clock clk_exthr -min 0 [get_ports hyperram_nrst]
 
 
 ### Clock Groups and Clock False Paths ###
@@ -770,17 +775,20 @@ set_false_path -to [get_ports ethmac_rst]
 #       not been instantiated/inferred correctly.
 #
 # Set output false path, timings are met by design
-set_false_path -to [get_ports hyperram_ckp]
-set_false_path -to [get_ports hyperram_ckn]
-set_false_path -to [get_ports hyperram_rwds]
-set_false_path -to [get_ports {hyperram_dq[*]}]
-# set input false path. dq[*] and rwds are supposed to
-# be fully asynchronous for the data recovery logic
-set_false_path -from [get_ports hyperram_rwds]
-set_false_path -from [get_ports {hyperram_dq[*]}]
-# False path for 'hb_cs_n' and 'hb_reset_n'
-set_false_path -to [get_ports hyperram_cs]
-set_false_path -to [get_ports hyperram_nrst]
+
+# No HyperRAM on Sonata XL
+# TODO: find a nicer was to disconnect hyperram
+# set_false_path -to [get_ports hyperram_ckp]
+# set_false_path -to [get_ports hyperram_ckn]
+# set_false_path -to [get_ports hyperram_rwds]
+# set_false_path -to [get_ports {hyperram_dq[*]}]
+# # set input false path. dq[*] and rwds are supposed to
+# # be fully asynchronous for the data recovery logic
+# set_false_path -from [get_ports hyperram_rwds]
+# set_false_path -from [get_ports {hyperram_dq[*]}]
+# # False path for 'hb_cs_n' and 'hb_reset_n'
+# set_false_path -to [get_ports hyperram_cs]
+# set_false_path -to [get_ports hyperram_nrst]
 
 ## PMOD 0 & 1
 # Ignore setup paths from PMOD multi-use ports that can be UART RX (but we are
