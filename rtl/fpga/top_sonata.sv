@@ -203,8 +203,8 @@ module top_sonata
   // output wire        hyperram_cs
 
   // XL expansion headers
-  inout  logic [79:0] ex0,
-  inout  logic [79:0] ex1
+  inout  logic [63:0] ex0,
+  inout  logic [63:0] ex1
 );
   import sonata_pkg::*;
 
