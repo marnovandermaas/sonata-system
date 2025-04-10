@@ -23,6 +23,7 @@
         {from: "util/ipgen",           to: "util/ipgen"},
 
         {from: "hw/ip/i2c",     to: "ip/i2c", patch_dir: "i2c"},
+        {from: "hw/ip/spi_device", to: "ip/spi_device", patch_dir: "spi_device"},
         {from: "hw/ip/tlul",    to: "ip/tlul", patch_dir: "tlul"},
         {from: "hw/ip/uart",    to: "ip/uart", patch_dir: "uart"},
         {from: "hw/ip/usbdev",  to: "ip/usbdev", patch_dir: "usbdev"},
@@ -32,6 +33,7 @@
         {from: "hw/top_earlgrey/top_pkg.core",   to: "ip/top_pkg/top_pkg.core"},
         {from: "hw/top_earlgrey/rtl/top_pkg.sv", to: "ip/top_pkg/rtl/top_pkg.sv"},
 
+        {from: "hw/dv/dpi/spidpi",     to: "dv/dpi/spidpi"},
         {from: "hw/dv/dpi/uartdpi",    to: "dv/dpi/uartdpi", patch_dir: "uartdpi"},
         {from: "hw/dv/dpi/usbdpi",     to: "dv/dpi/usbdpi"},
     ]
