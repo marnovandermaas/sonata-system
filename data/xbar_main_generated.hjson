@@ -281,6 +281,16 @@
         size_byte: "0x00001000",
       }],
     },
+    { name:  "spi_device", // SPI device
+      type:  "device",
+      clock: "clk_sys_i",
+      reset: "rst_sys_ni",
+      xbar:  false,
+      addr_range: [{
+        base_addr: "0x80500000",
+        size_byte: "0x00001000",
+      }],
+    },
     { name:  "rv_plic", // RISC-V platform interrupt controller
       type:  "device",
       clock: "clk_sys_i",
@@ -320,6 +330,7 @@
       "spi1",
       "spi2",
       "usbdev",
+      "spi_device",
       "rv_plic",
     ],
     dbg_host: ["sram"],
