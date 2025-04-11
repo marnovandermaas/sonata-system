@@ -155,6 +155,7 @@ module sonata_system
   localparam int unsigned SpiIrqs    = 5;
   localparam int unsigned UartIrqs   = 9;
   localparam int unsigned UsbdevIrqs = 18;
+  localparam int unsigned SpidevIrqs = 8;
 
   logic timer_irq;
   logic external_irq;
@@ -163,6 +164,7 @@ module sonata_system
   logic [SpiIrqs-1:0]    spi_interrupts [TotalSpiNum];
   logic [UartIrqs-1:0]   uart_interrupts[UART_NUM];
   logic [UsbdevIrqs-1:0] usbdev_interrupts;
+  logic [SpidevIrqs-1:0] spi_device_interrupts;
 
   logic ethmac_irq;
 
@@ -172,6 +174,7 @@ module sonata_system
   logic [TotalSpiNum-1:0]  spi_irq;
   logic [UART_NUM-1:0] uart_irq;
   logic                usbdev_irq;
+  logic                spi_device_irq
 
   always_comb begin
     // Single interrupt line per UART.
@@ -189,6 +192,8 @@ module sonata_system
     end
     // Single interrupt line for USBDEV.
     usbdev_irq = |usbdev_interrupts;
+    // signle interrupt line for SPI device.
+    spi_device_irq = |spi_device_interrupts;
   end
 
   logic [31:0] intr_vector;
@@ -199,7 +204,8 @@ module sonata_system
   assign intr_vector[15 + I2C_NUM     : 16              ] = i2c_irq;
   assign intr_vector[15               :  8 + UART_NUM   ] = 'b0;
   assign intr_vector[ 7 + UART_NUM    :  8              ] = uart_irq; // Support up to 8 UARTs.
-  assign intr_vector[ 7               :  4              ] = 4'h0;     // Reserved for future use.
+  assign intr_vector[ 7                                 ] = spi_device_irq;
+  assign intr_vector[ 6               :  4              ] = 4'h0;     // Reserved for future use.
   assign intr_vector[ 3                                 ] = usbdev_irq;
   assign intr_vector[ 2                                 ] = ethmac_irq;
   assign intr_vector[ 1                                 ] = hardware_revoker_irq;
@@ -327,6 +333,8 @@ module sonata_system
   tlul_pkg::tl_d2h_t tl_rv_plic_d2h;
   tlul_pkg::tl_h2d_t tl_spi_h2d[SPI_NUM];
   tlul_pkg::tl_d2h_t tl_spi_d2h[SPI_NUM];
+  tlul_pkg::tl_h2d_t tl_spi_device_h2d;
+  tlul_pkg::tl_d2h_t tl_spi_device_d2h;
   tlul_pkg::tl_h2d_t tl_usbdev_h2d;
   tlul_pkg::tl_d2h_t tl_usbdev_d2h;
   tlul_pkg::tl_h2d_t tl_rev_tag_h2d;
@@ -385,6 +393,8 @@ module sonata_system
     .tl_spi_i         (tl_spi_d2h),
     .tl_usbdev_o      (tl_usbdev_h2d),
     .tl_usbdev_i      (tl_usbdev_d2h),
+    .tl_spi_device_o  (tl_spi_device_h2d),
+    .tl_spi_device_i  (tl_spi_device_d2h),
     .tl_rv_plic_o     (tl_rv_plic_h2d),
     .tl_rv_plic_i     (tl_rv_plic_d2h)
   );
@@ -1101,6 +1111,52 @@ module sonata_system
       .spi_clk_o           (spi_sclk[i])
     );
   end : gen_spi_hosts
+
+  // SPI device
+  spi_device #(
+    .SramType     ( spi_device_pkg::SramType2p )
+  ) u_spi_device (
+
+      // Input
+      .cio_sck_i     (cio_spi_device_sck_p2d),
+      .cio_csb_i     (1'b0),
+      .cio_tpm_csb_i (cio_spi_device_tpm_csb_p2d),
+      .cio_sd_i      (cio_spi_device_sd_p2d),
+
+      // Output
+      .cio_sd_o    (cio_spi_device_sd_d2p),
+      .cio_sd_en_o (cio_spi_device_sd_en_d2p),
+
+      // Interrupt
+      .intr_upload_cmdfifo_not_empty_o (spi_device_interrupts[0]),
+      .intr_upload_payload_not_empty_o (spi_device_interrupts[1]),
+      .intr_upload_payload_overflow_o  (spi_device_interrupts[2]),
+      .intr_readbuf_watermark_o        (spi_device_interrupts[3]),
+      .intr_readbuf_flip_o             (spi_device_interrupts[4]),
+      .intr_tpm_header_not_empty_o     (spi_device_interrupts[5]),
+      .intr_tpm_rdfifo_cmd_end_o       (spi_device_interrupts[6]),
+      .intr_tpm_rdfifo_drop_o          (spi_device_interrupts[7]),
+
+      // Alert
+      .alert_tx_o  ( ),
+      .alert_rx_i  ('0),
+
+      // Inter-module signals
+      .ram_cfg_i             ('0),
+      .passthrough_o         ( ),
+      .passthrough_i         (spi_device_pkg::PASSTHROUGH_REQ_DEFAULT),
+      .mbist_en_i            ('0),
+      .sck_monitor_o         ( ),
+      .tl_i                  (tl_spi_device_h2d),
+      .tl_o                  (tl_spi_device_d2h),
+      .scanmode_i            (prim_mubi_pkg::MuBi4False),
+      .scan_rst_ni           (1'b1),
+
+      // Clock and reset connections
+      .clk_i      (clk_sys_i),
+      .scan_clk_i (clk_sys_i),
+      .rst_ni     (rst_sys_ni)
+  );
 
   // Sample the ethernet interrupt pin.
   always_ff @(posedge clk_sys_i or negedge rst_sys_ni) begin
