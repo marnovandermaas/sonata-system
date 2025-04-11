@@ -137,6 +137,13 @@ module top_verilator (input logic clk_i, rst_ni);
   // LCD backlight on/off.
   wire lcd_backlight;
 
+  // TPM SPI device
+  wire tpm_cipo;
+  wire tpm_cipo_en;
+  wire tpm_copi;
+  wire tpm_sclk;
+  wire tpm_cs;
+
   // mikroBUS Click.
   wire mb1;
   // Arduino
@@ -352,6 +359,12 @@ module top_verilator (input logic clk_i, rst_ni);
     .ethmac_rst_o            (),
     .ethmac_irq_ni           (1'b1), // Interrupt for Ethernet is out of band
 
+    .tpm_cipo_o              (tpm_cipo),
+    .tpm_cipo_en_o           (tpm_cipo_en),
+    .tpm_copi_i              (tpm_copi),
+    .tpm_sclk_i              (tpm_sclk),
+    .tpm_cs_i                (tpm_cs),
+
     // CHERI signals
     .cheri_en_i     (cheri_en ),
     .cheri_err_o    (cheri_err),
@@ -445,6 +458,20 @@ module top_verilator (input logic clk_i, rst_ni);
     // Out-Of-Band data.
     .oob_in   (1'b0),
     .oob_out  ()  // not used
+  );
+
+  // SPI TPM device
+  spidpi #(
+    .NAME ( "spi_tpm" )
+  ) u_tpm_dpi (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    .spi_device_sck_o    (tpm_sclk),
+    .spi_device_csb_o    (tpm_cs),
+    .spi_device_sdi_o    (tpm_copi),
+    .spi_device_sdo_i    (tpm_cipo),
+    .spi_device_sdo_en_i (tpm_cipo_en)
   );
 
   // Virtual UART

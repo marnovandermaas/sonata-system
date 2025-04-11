@@ -54,6 +54,12 @@ module sonata_system
   output logic                     ethmac_rst_o,
   input  logic                     ethmac_irq_ni, // Interrupt from Ethernet MAC
 
+  output logic                     tpm_cipo_o,
+  output logic                     tpm_cipo_en_o,
+  input  logic                     tpm_copi_i,
+  input  logic                     tpm_sclk_i,
+  input  logic                     tpm_cs_i,
+
   // User JTAG
   input  logic                     tck_i,   // JTAG test clock pad
   input  logic                     tms_i,   // JTAG test mode select pad
@@ -1118,14 +1124,14 @@ module sonata_system
   ) u_spi_device (
 
       // Input
-      .cio_sck_i     (cio_spi_device_sck_p2d),
+      .cio_sck_i     (tpm_sclk_i),
       .cio_csb_i     (1'b0),
-      .cio_tpm_csb_i (cio_spi_device_tpm_csb_p2d),
-      .cio_sd_i      (cio_spi_device_sd_p2d),
+      .cio_tpm_csb_i (tpm_cs_i),
+      .cio_sd_i      (tpm_copi_i),
 
       // Output
-      .cio_sd_o    (cio_spi_device_sd_d2p),
-      .cio_sd_en_o (cio_spi_device_sd_en_d2p),
+      .cio_sd_o    (tpm_cipo_o),
+      .cio_sd_en_o (tpm_cipo_en_o),
 
       // Interrupt
       .intr_upload_cmdfifo_not_empty_o (spi_device_interrupts[0]),
