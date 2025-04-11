@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-load("@ot_python_deps//:requirements.bzl", "requirement")
+load("//third_party/python:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -71,9 +71,8 @@ py_binary(
     srcs = ["gen-otp-immutable-rom-ext-json.py"],
     imports = ["."],
     deps = [
+        "//util/design/lib:immutable_section_processor",
         requirement("hjson"),
-        requirement("pycryptodome"),
-        requirement("pyelftools"),
     ],
 )
 

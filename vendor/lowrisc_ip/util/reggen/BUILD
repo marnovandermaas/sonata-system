@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("@ot_python_deps//:requirements.bzl", "requirement")
+load("//third_party/python:requirements.bzl", "requirement")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -217,6 +217,7 @@ py_library(
         ":window",
         requirement("mako"),
         requirement("pyyaml"),
+        requirement("importlib_resources"),
     ],
 )
 
@@ -227,6 +228,7 @@ py_library(
         ":ip_block",
         requirement("mako"),
         requirement("pyyaml"),
+        requirement("importlib_resources"),
     ],
 )
 
@@ -260,6 +262,7 @@ py_library(
         ":reg_base",
         ":register",
         requirement("mako"),
+        requirement("importlib_resources"),
     ],
 )
 
@@ -298,6 +301,7 @@ py_library(
         ":ip_block",
         requirement("hjson"),
         requirement("mako"),
+        requirement("importlib_resources"),
     ],
 )
 
