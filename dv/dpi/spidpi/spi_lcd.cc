@@ -74,7 +74,7 @@ typedef enum {
 // --------
 
 void spi_lcd::reset() {
-  spidpi::reset();
+  spidevdpi::reset();
 
   cmdLen = 0u;
   xEnd = xStart = 0u;

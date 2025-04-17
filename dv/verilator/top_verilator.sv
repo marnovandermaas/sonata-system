@@ -520,7 +520,7 @@ module top_verilator (input logic clk_i, rst_ni);
   );
 
   // SPI connection to flash.
-  spidpi #(
+  spidevdpi #(
     .ID       ("flash"),
     .NDevices (1),
     .DataW    (1),
@@ -539,7 +539,7 @@ module top_verilator (input logic clk_i, rst_ni);
   );
 
   // SPI connection to LCD.
-  spidpi #(
+  spidevdpi #(
     .ID       ("lcd"),
     .NDevices (1),
     .DataW    (1),
@@ -558,7 +558,7 @@ module top_verilator (input logic clk_i, rst_ni);
   );
 
   // SPI connection to microSD card.
-  spidpi #(
+  spidevdpi #(
     .ID       ("microsd"),
     .NDevices (1),
     .DataW    (1),
@@ -577,7 +577,7 @@ module top_verilator (input logic clk_i, rst_ni);
   );
 
   // SPI connection to PMOD SF3 flash via PMOD1 pins
-  spidpi #(
+  spidevdpi #(
     .ID       ("pmod_sf3"),
     .NDevices (1),
     .DataW    (1),
