@@ -16,6 +16,7 @@ filesets:
       - lowrisc:ip:xbar_main
       - lowrisc:ip:xbar_ifetch
       - lowrisc:ip:spi
+      - lowrisc:ip:spi_device
       - lowrisc:ip:gpio
       - lowrisc:ip:rev_ctl
       - lowrisc:ip:rgbled_ctrl

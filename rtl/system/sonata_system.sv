@@ -180,7 +180,7 @@ module sonata_system
   logic [TotalSpiNum-1:0]  spi_irq;
   logic [UART_NUM-1:0] uart_irq;
   logic                usbdev_irq;
-  logic                spi_device_irq
+  logic                spi_device_irq;
 
   always_comb begin
     // Single interrupt line per UART.
@@ -211,7 +211,7 @@ module sonata_system
   assign intr_vector[15               :  8 + UART_NUM   ] = 'b0;
   assign intr_vector[ 7 + UART_NUM    :  8              ] = uart_irq; // Support up to 8 UARTs.
   assign intr_vector[ 7                                 ] = spi_device_irq;
-  assign intr_vector[ 6               :  4              ] = 4'h0;     // Reserved for future use.
+  assign intr_vector[ 6               :  4              ] = 3'h0;     // Reserved for future use.
   assign intr_vector[ 3                                 ] = usbdev_irq;
   assign intr_vector[ 2                                 ] = ethmac_irq;
   assign intr_vector[ 1                                 ] = hardware_revoker_irq;
@@ -1142,10 +1142,6 @@ module sonata_system
       .intr_tpm_header_not_empty_o     (spi_device_interrupts[5]),
       .intr_tpm_rdfifo_cmd_end_o       (spi_device_interrupts[6]),
       .intr_tpm_rdfifo_drop_o          (spi_device_interrupts[7]),
-
-      // Alert
-      .alert_tx_o  ( ),
-      .alert_rx_i  ('0),
 
       // Inter-module signals
       .ram_cfg_i             ('0),
