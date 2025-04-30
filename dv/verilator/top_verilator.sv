@@ -9,7 +9,7 @@ module top_verilator (input logic clk_i, rst_ni);
   // System clock frequency.
   localparam int unsigned SysClkFreq = 40_000_000;
   // HyperRAM clock frequency.
-  localparam int unsigned HyperRAMClkFreq  = 100_000_000;
+  //localparam int unsigned HyperRAMClkFreq  = 100_000_000;
   localparam int unsigned BaudRate   = 921_600;
   // Number of CHERI error LEDs.
   localparam int unsigned CheriErrWidth = 9;
@@ -307,8 +307,8 @@ module top_verilator (input logic clk_i, rst_ni);
   // Instantiating the Sonata System.
   sonata_system #(
     .CheriErrWidth   ( CheriErrWidth   ),
-    .SysClkFreq      ( SysClkFreq      ),
-    .HyperRAMClkFreq ( HyperRAMClkFreq )
+    .SysClkFreq      ( SysClkFreq      )
+    //.HyperRAMClkFreq ( HyperRAMClkFreq )
   ) u_sonata_system (
     // Main system clock and reset
     .clk_sys_i      (clk_i),

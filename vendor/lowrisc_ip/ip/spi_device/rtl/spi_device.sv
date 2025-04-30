@@ -8,11 +8,9 @@
 `include "prim_assert.sv"
 
 module spi_device
-  import spi_device_reg_pkg::NumAlerts;
   import spi_device_reg_pkg::SPI_DEVICE_EGRESS_BUFFER_IDX;
   import spi_device_reg_pkg::SPI_DEVICE_INGRESS_BUFFER_IDX;
 #(
-  parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}},
   parameter spi_device_pkg::sram_type_e SramType = spi_device_pkg::DefaultSramType
 ) (
   input clk_i,
@@ -21,10 +19,6 @@ module spi_device
   // Register interface
   input  tlul_pkg::tl_h2d_t tl_i,
   output tlul_pkg::tl_d2h_t tl_o,
-
-  // Alerts
-  input  prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
-  output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
 
   // SPI Interface
   input              cio_sck_i,
@@ -1672,8 +1666,10 @@ module spi_device
     .addr_o                     (sys_sram_l2m[SysSramFwEgress].addr),
     .wdata_o                    (sys_sram_l2m[SysSramFwEgress].wdata),
     .wmask_o                    (sys_sram_l2m_fw_wmask[SPI_DEVICE_EGRESS_BUFFER_IDX]),  // Not used
+    .wdata_cap_o                (),
     .intg_error_o               (),
     .rdata_i                    (sys_sram_m2l[SysSramFwEgress].rdata),
+    .rdata_cap_i                (1'b0),
     .rvalid_i                   (sys_sram_m2l[SysSramFwEgress].rvalid),
     .rerror_i                   (sys_sram_m2l[SysSramFwEgress].rerror),
     .compound_txn_in_progress_o (),
@@ -1703,8 +1699,10 @@ module spi_device
     .addr_o                     (sys_sram_l2m[SysSramFwIngress].addr),
     .wdata_o                    (sys_sram_l2m[SysSramFwIngress].wdata),
     .wmask_o                    (sys_sram_l2m_fw_wmask[SPI_DEVICE_INGRESS_BUFFER_IDX]),  // Not used
+    .wdata_cap_o                (),
     .intg_error_o               (),
     .rdata_i                    (sys_sram_m2l[SysSramFwIngress].rdata),
+    .rdata_cap_i                (1'b0),
     .rvalid_i                   (sys_sram_m2l[SysSramFwIngress].rvalid),
     .rerror_i                   (sys_sram_m2l[SysSramFwIngress].rerror),
     .compound_txn_in_progress_o (),
@@ -1841,7 +1839,6 @@ module spi_device
   );
 
   // Register module
-  logic [NumAlerts-1:0] alert_test, alerts;
   spi_device_reg_top u_reg (
     .clk_i,
     .rst_ni,
@@ -1856,30 +1853,8 @@ module spi_device
     .hw2reg,
 
     // SEC_CM: BUS.INTEGRITY
-    .intg_err_o (alerts[0])
+    .intg_err_o ( )
   );
-
-  // Alerts
-  assign alert_test = {
-    reg2hw.alert_test.q &
-    reg2hw.alert_test.qe
-  };
-
-  for (genvar i = 0; i < NumAlerts; i++) begin : gen_alert_tx
-    prim_alert_sender #(
-      .AsyncOn(AlertAsyncOn[i]),
-      .IsFatal(1'b1)
-    ) u_prim_alert_sender (
-      .clk_i,
-      .rst_ni,
-      .alert_test_i  ( alert_test[i] ),
-      .alert_req_i   ( alerts[0]     ),
-      .alert_ack_o   (               ),
-      .alert_state_o (               ),
-      .alert_rx_i    ( alert_rx_i[i] ),
-      .alert_tx_o    ( alert_tx_o[i] )
-    );
-  end
 
   // make sure scanmode_i is never X (including during reset)
   `ASSERT_KNOWN(scanmodeKnown, scanmode_i, clk_i, 0)
@@ -1897,14 +1872,10 @@ module spi_device
   `ASSERT_KNOWN(IntrTpmRdfifoCmdEndOKnown, intr_tpm_rdfifo_cmd_end_o)
   `ASSERT_KNOWN(IntrTpmRdfifoDropOKnown, intr_tpm_rdfifo_drop_o)
 
-  `ASSERT_KNOWN(AlertKnownO_A,         alert_tx_o)
-
   // Assume the tpm_en is set when TPM transaction is idle.
   `ASSUME(TpmEnableWhenTpmCsbIdle_M, $rose(cfg_tpm_en) |-> cio_tpm_csb_i)
 
   // When CSBs are inactive, spi_device shouldn't drive the CIO
   `ASSERT(CioSdoEnOffWhenInactive, cio_csb_i && cio_tpm_csb_i -> cio_sd_en_o === 0)
 
-  // Alert assertions for reg_we onehot check
-  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
 endmodule

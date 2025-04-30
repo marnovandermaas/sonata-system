@@ -30,7 +30,7 @@ package spi_device_reg_pkg;
   parameter int unsigned NumLocality = 5;
   parameter int unsigned TpmRdFifoPtrW = 5;
   parameter int unsigned TpmRdFifoWidth = 32;
-  parameter int NumAlerts = 1;
+  parameter int NumAlerts = 0;
 
   // Address widths within the block
   parameter int BlockAw = 13;

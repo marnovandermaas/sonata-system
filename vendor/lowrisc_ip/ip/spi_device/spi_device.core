@@ -9,7 +9,6 @@ filesets:
   files_rtl:
     depend:
       - lowrisc:ip:tlul
-      - lowrisc:prim:all
       - lowrisc:prim:clock_buf
       - lowrisc:prim:clock_gating
       - lowrisc:prim:clock_inv
@@ -19,8 +18,6 @@ filesets:
       - lowrisc:prim:ram_1r1w_async_adv
       - lowrisc:prim:edge_detector
       - lowrisc:prim:rst_sync
-      - lowrisc:ip:lc_ctrl_pkg
-      - lowrisc:prim:lc_sync
       - lowrisc:ip:spi_device_pkg
     files:
       - rtl/spi_device_reg_top.sv

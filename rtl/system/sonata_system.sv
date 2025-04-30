@@ -11,8 +11,8 @@ module sonata_system
   parameter int unsigned ArdAniWidth     = 6,
   parameter int unsigned CheriErrWidth   =  9,
   parameter SRAMInitFile                 = "",
-  parameter int unsigned SysClkFreq      = 30_000_000,
-  parameter int unsigned HyperRAMClkFreq = 100_000_000
+  parameter int unsigned SysClkFreq      = 30_000_000
+  //parameter int unsigned HyperRAMClkFreq = 100_000_000
 ) (
   // Main system clock and reset
   input logic                      clk_sys_i,
@@ -535,7 +535,7 @@ module sonata_system
   //   .hyperram_cs
   // );
 
-    sram #(
+  sram #(
     .AddrWidth       ( HyperRAMAddrWidth ),
     .DataWidth       ( BusDataWidth    ),
     .DataBitsPerMask ( DataBitsPerMask ),
@@ -1118,6 +1118,15 @@ module sonata_system
     );
   end : gen_spi_hosts
 
+  logic [3:0] cio_sd;
+  logic [3:0] cio_sd_en;
+  logic unused_cio;
+
+  assign tpm_cipo_o = cio_sd[1];
+  assign tpm_cipo_en_o = cio_sd_en[1];
+  assign unused_cio = cio_sd[3] | cio_sd[2] | cio_sd[0] |
+    cio_sd_en[3] | cio_sd_en[2] | cio_sd_en[0];
+
   // SPI device
   spi_device #(
     .SramType     ( spi_device_pkg::SramType2p )
@@ -1127,11 +1136,11 @@ module sonata_system
       .cio_sck_i     (tpm_sclk_i),
       .cio_csb_i     (1'b0),
       .cio_tpm_csb_i (tpm_cs_i),
-      .cio_sd_i      (tpm_copi_i),
+      .cio_sd_i      ({3'b0, tpm_copi_i}),
 
       // Output
-      .cio_sd_o    (tpm_cipo_o),
-      .cio_sd_en_o (tpm_cipo_en_o),
+      .cio_sd_o    (cio_sd),
+      .cio_sd_en_o (cio_sd_en),
 
       // Interrupt
       .intr_upload_cmdfifo_not_empty_o (spi_device_interrupts[0]),
@@ -1146,7 +1155,7 @@ module sonata_system
       // Inter-module signals
       .ram_cfg_i             ('0),
       .passthrough_o         ( ),
-      .passthrough_i         (spi_device_pkg::PASSTHROUGH_REQ_DEFAULT),
+      .passthrough_i         (spi_device_pkg::PASSTHROUGH_RSP_DEFAULT),
       .mbist_en_i            ('0),
       .sck_monitor_o         ( ),
       .tl_i                  (tl_spi_device_h2d),
